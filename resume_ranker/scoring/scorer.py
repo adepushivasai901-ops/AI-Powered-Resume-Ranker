@@ -3,8 +3,10 @@ import numpy as np
 
 from resume_ranker.extraction.quality_assessor import DocumentQualityReport
 from resume_ranker.matching.requirement_matcher import RequirementMatcher
+from resume_ranker.models.evidence import EvidenceType
 from resume_ranker.models.job_description import ParsedJobDescription, RequirementType
 from resume_ranker.models.matching import (
+    AnomalyFlag,
     AnomalySeverity,
     RequirementMatchStatus,
     ScoredCandidateProfile,
@@ -49,6 +51,7 @@ class CandidateScorer:
         required_skills_weight: float = 0.30,
         preferred_skills_weight: float = 0.10,
         experience_weight: float = 0.10,
+        education_weight: float = 0.10,
         skills_weight: Optional[float] = None,
     ):
         """Initialize candidate scorer with configurable weighting parameters.
@@ -58,6 +61,7 @@ class CandidateScorer:
             required_skills_weight: Weight for required skill coverage (default: 0.30).
             preferred_skills_weight: Weight for preferred skill coverage (default: 0.10).
             experience_weight: Weight for experience/qualification relevance (default: 0.10).
+            education_weight: Weight for education qualification relevance (default: 0.10).
             skills_weight: Legacy parameter alias mapping to required_skills_weight.
         """
         self.similarity_weight = similarity_weight
@@ -65,10 +69,12 @@ class CandidateScorer:
             self.required_skills_weight = skills_weight
             self.preferred_skills_weight = 0.0
             self.experience_weight = 0.0
+            self.education_weight = 0.0
         else:
             self.required_skills_weight = required_skills_weight
             self.preferred_skills_weight = preferred_skills_weight
             self.experience_weight = experience_weight
+            self.education_weight = education_weight
 
     def normalize_skill(self, skill: str) -> str:
         """Normalize a skill name for robust, case-insensitive comparison.
@@ -244,43 +250,65 @@ class CandidateScorer:
         exp_matches = [m for m in match_results if m.req_type == RequirementType.MINIMUM_EXPERIENCE]
         edu_matches = [m for m in match_results if m.req_type == RequirementType.EDUCATION]
 
-        # 3. Compute subcomponent percentage scores (0-100)
+        # 3. Dynamic Renormalization & Subcomponent Scoring
+        active_weights: Dict[str, float] = {}
+        active_scores: Dict[str, float] = {}
+
+        # Component: Similarity (always active)
+        active_weights["similarity"] = self.similarity_weight
+        active_scores["similarity"] = scaled_sim
+
+        # Component: Required Skills
         if req_skill_matches:
-            req_skill_score = (sum(m.score for m in req_skill_matches) / len(req_skill_matches)) * 100.0
+            req_skill_score: Optional[float] = (
+                sum(m.score for m in req_skill_matches) / len(req_skill_matches)
+            ) * 100.0
+            active_weights["required_skills"] = self.required_skills_weight
+            active_scores["required_skills"] = req_skill_score
         else:
-            req_skill_score = 100.0
+            req_skill_score = None
 
+        # Component: Preferred Skills
         if pref_skill_matches:
-            pref_skill_score = (sum(m.score for m in pref_skill_matches) / len(pref_skill_matches)) * 100.0
+            pref_skill_score: Optional[float] = (
+                sum(m.score for m in pref_skill_matches) / len(pref_skill_matches)
+            ) * 100.0
+            active_weights["preferred_skills"] = self.preferred_skills_weight
+            active_scores["preferred_skills"] = pref_skill_score
         else:
-            pref_skill_score = 0.0
+            pref_skill_score = None
 
+        # Component: Career Experience
         if exp_matches:
-            exp_score = (sum(m.score for m in exp_matches) / len(exp_matches)) * 100.0
+            exp_score: Optional[float] = (
+                sum(m.score for m in exp_matches) / len(exp_matches)
+            ) * 100.0
+            active_weights["experience"] = self.experience_weight
+            active_scores["experience"] = exp_score
         elif parsed_resume.timeline.total_experience_years > 0:
             exp_score = min(100.0, parsed_resume.timeline.total_experience_years * 20.0)
+            active_weights["experience"] = self.experience_weight
+            active_scores["experience"] = exp_score
         else:
-            exp_score = 50.0
+            exp_score = None
 
+        # Component: Education
         if edu_matches:
-            edu_score = (sum(m.score for m in edu_matches) / len(edu_matches)) * 100.0
+            edu_score: Optional[float] = (
+                sum(m.score for m in edu_matches) / len(edu_matches)
+            ) * 100.0
+            active_weights["education"] = self.education_weight
+            active_scores["education"] = edu_score
         else:
-            edu_score = 100.0
+            edu_score = None
 
-        # 4. Weighted total score
-        total_w = (
-            self.similarity_weight
-            + self.required_skills_weight
-            + self.preferred_skills_weight
-            + self.experience_weight
-        )
-        weighted_sum = (
-            (scaled_sim * self.similarity_weight)
-            + (req_skill_score * self.required_skills_weight)
-            + (pref_skill_score * self.preferred_skills_weight)
-            + (exp_score * self.experience_weight)
-        )
-        final_score = round(float(np.clip(weighted_sum / total_w if total_w > 0 else 0.0, 0.0, 100.0)), 2)
+        # 4. Dynamic Renormalization: Weighted Composite Calculation
+        total_active_w = sum(active_weights.values())
+        if total_active_w > 0:
+            weighted_sum = sum(active_scores[k] * active_weights[k] for k in active_weights)
+            final_score = round(float(np.clip(weighted_sum / total_active_w, 0.0, 100.0)), 2)
+        else:
+            final_score = 0.0
 
         # 5. Extract matched and missing skill lists
         matched_req = [
@@ -309,28 +337,43 @@ class CandidateScorer:
         anomaly_detector = AnomalyDetector()
         anomalies = anomaly_detector.detect_anomalies(parsed_resume, quality_report)
 
-        # 7. Confidence estimation
-        confidence = 1.0
-        if quality_report:
-            confidence = min(confidence, quality_report.confidence)
-        if any(a.severity == AnomalySeverity.HIGH for a in anomalies):
-            confidence = min(confidence, 0.60)
-        confidence = round(confidence, 2)
+        # 7. Analysis Confidence estimation
+        confidence = self.compute_analysis_confidence(
+            parsed_resume=parsed_resume,
+            quality_report=quality_report,
+            anomalies=anomalies,
+        )
 
         # 8. Human-interpretable explanation
-        matched_req_count = len([m for m in req_skill_matches if m.status == RequirementMatchStatus.SATISFIED])
-        total_req_count = len(req_skill_matches)
+        active_breakdown_parts = []
+        for name, w in active_weights.items():
+            eff_pct = (w / total_active_w) * 100.0 if total_active_w > 0 else 0.0
+            score_val = active_scores.get(name, 0.0)
+            label = {
+                "similarity": "TF-IDF lexical similarity",
+                "required_skills": "Required skills",
+                "preferred_skills": "Preferred skills",
+                "experience": "Career experience",
+                "education": "Education alignment",
+            }.get(name, name)
+            active_breakdown_parts.append(f"{label}: {score_val:.1f}% (weight: {eff_pct:.0f}%)")
+
+        missing_noted = []
+        if exp_score is None:
+            missing_noted.append("Experience: Not found (excluded from scoring)")
+        if edu_score is None:
+            missing_noted.append("Education: Not specified in JD (excluded from scoring)")
+
+        breakdown_text = "; ".join(active_breakdown_parts)
+        if missing_noted:
+            breakdown_text += f". Notes: {'; '.join(missing_noted)}"
+
         explanation = (
-            f"Final score: {final_score:.2f}/100 (Confidence: {confidence * 100:.0f}%). "
-            f"Component breakdown: Required skills {req_skill_score:.1f}% "
-            f"({matched_req_count}/{max(1, total_req_count)} verified); "
-            f"Preferred skills: {pref_skill_score:.1f}%; "
-            f"Career experience: {exp_score:.1f}% ({parsed_resume.timeline.total_experience_years:.1f} continuous years); "
-            f"TF-IDF lexical similarity: {scaled_sim:.1f}%; "
-            f"Education alignment: {edu_score:.1f}%."
+            f"Final score: {final_score:.2f}/100 (Analysis Confidence: {confidence * 100:.0f}%). "
+            f"Active components: {breakdown_text}."
         )
         if anomalies:
-            high_anoms = [a.message for a in anomalies if a.severity == AnomalySeverity.HIGH]
+            high_anoms = [a.message for a in anomalies if a.severity in [AnomalySeverity.HIGH, AnomalySeverity.MEDIUM]]
             if high_anoms:
                 explanation += f" Attention: {'; '.join(high_anoms)}."
 
@@ -339,10 +382,10 @@ class CandidateScorer:
             filename=parsed_resume.document.filename,
             final_score=final_score,
             similarity_score=round(scaled_sim, 2),
-            required_skill_score=round(req_skill_score, 2),
-            preferred_skill_score=round(pref_skill_score, 2),
-            experience_score=round(exp_score, 2),
-            education_score=round(edu_score, 2),
+            required_skill_score=round(req_skill_score, 2) if req_skill_score is not None else None,
+            preferred_skill_score=round(pref_skill_score, 2) if pref_skill_score is not None else None,
+            experience_score=round(exp_score, 2) if exp_score is not None else None,
+            education_score=round(edu_score, 2) if edu_score is not None else None,
             requirement_matches=match_results,
             matched_required_skills=matched_req,
             missing_required_skills=missing_req,
@@ -353,4 +396,85 @@ class CandidateScorer:
             confidence=confidence,
             explanation=explanation,
         )
+
+    def compute_analysis_confidence(
+        self,
+        parsed_resume: ParsedResume,
+        quality_report: Optional[DocumentQualityReport] = None,
+        anomalies: Optional[List[AnomalyFlag]] = None,
+    ) -> float:
+        """Compute realistic, evidence-grounded Analysis Confidence (capped at 0.88 for self-reported resumes).
+
+        Factors:
+        1. Document Quality & Text Density (0.35)
+        2. Section Completeness (0.35)
+        3. Evidence Verification Quality (0.30)
+        4. Deductions for detected anomalies
+        """
+        # 1. Document Quality & Text Density Factor
+        if quality_report:
+            words = getattr(quality_report, "total_words", getattr(quality_report, "word_count", 0))
+            if quality_report.is_scanned_image:
+                doc_quality_factor = 0.25
+            elif words < 100:
+                doc_quality_factor = 0.45
+            elif words < 250:
+                doc_quality_factor = 0.65
+            else:
+                doc_quality_factor = min(1.0, quality_report.confidence)
+            doc_quality_factor -= min(0.30, quality_report.suspicious_chars_ratio * 3.0)
+            doc_quality_factor = max(0.15, doc_quality_factor)
+        else:
+            word_count = len(parsed_resume.raw_text.split())
+            if word_count < 100:
+                doc_quality_factor = 0.45
+            elif word_count < 250:
+                doc_quality_factor = 0.70
+            else:
+                doc_quality_factor = 0.90
+
+        # 2. Section Structure Completeness Factor
+        sections_found = set(parsed_resume.sections_detected.keys())
+        struct_score = 0.20  # baseline
+        if "EXPERIENCE" in sections_found:
+            struct_score += 0.30
+        if "SKILLS" in sections_found:
+            struct_score += 0.25
+        if "EDUCATION" in sections_found:
+            struct_score += 0.15
+        if "HEADER" in sections_found or "SUMMARY" in sections_found:
+            struct_score += 0.10
+        struct_factor = min(1.0, struct_score)
+
+        # 3. Evidence Verification Quality Factor
+        total_skills = len(parsed_resume.skills)
+        if total_skills > 0:
+            verified_count = sum(1 for s in parsed_resume.skills if s.evidence_type == EvidenceType.VERIFIED)
+            verification_ratio = verified_count / total_skills
+            evidence_factor = 0.60 + (0.35 * verification_ratio)
+        else:
+            evidence_factor = 0.50
+
+        # Weighted combination
+        raw_conf = (
+            (0.35 * doc_quality_factor)
+            + (0.35 * struct_factor)
+            + (0.30 * evidence_factor)
+        )
+
+        # 4. Anomaly Deductions
+        if anomalies:
+            for a in anomalies:
+                if a.severity == AnomalySeverity.HIGH:
+                    raw_conf -= 0.30
+                elif a.severity == AnomalySeverity.MEDIUM:
+                    raw_conf -= 0.12
+                elif a.severity == AnomalySeverity.LOW:
+                    raw_conf -= 0.04
+            if any(a.severity == AnomalySeverity.HIGH for a in anomalies):
+                raw_conf = min(raw_conf, 0.60)
+
+        # Maximum ceiling: 0.88 for self-reported resumes; floor: 0.20
+        analysis_confidence = round(float(np.clip(raw_conf, 0.20, 0.88)), 2)
+        return analysis_confidence
 

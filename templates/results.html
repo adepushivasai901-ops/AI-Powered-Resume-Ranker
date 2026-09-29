@@ -71,8 +71,12 @@
                     <td>
                         <div class="candidate-title">{{ candidate.candidate_id }}</div>
                         <div class="candidate-meta" style="margin-top: 0.25rem;">
-                            {% if candidate.confidence is defined and candidate.confidence < 0.7 %}
-                                <span class="badge badge-warning" title="Quality/extraction confidence warning">
+                            {% if candidate.confidence is defined and candidate.confidence < 0.65 %}
+                                <span class="badge badge-warning" title="Low analysis confidence - manual review recommended">
+                                    {{ (candidate.confidence * 100)|int }}% Confidence
+                                </span>
+                            {% elif candidate.confidence is defined and candidate.confidence < 0.80 %}
+                                <span class="badge badge-info" title="Moderate analysis confidence">
                                     {{ (candidate.confidence * 100)|int }}% Confidence
                                 </span>
                             {% elif candidate.confidence is defined %}
@@ -94,11 +98,21 @@
                     </td>
                     <td>
                         <div class="subscore-list">
-                            <span title="TF-IDF Lexical Similarity">Similarity: <strong>{{ candidate.similarity_score }}%</strong></span>
-                            <span title="Required Skills Coverage">Req Skills: <strong>{{ candidate.required_skill_score }}%</strong></span>
-                            <span title="Experience & Qualifications">Experience: <strong>{{ candidate.experience_score }}%</strong></span>
-                            {% if candidate.education_score is defined %}
-                            <span title="Education Alignment">Education: <strong>{{ candidate.education_score }}%</strong></span>
+                            <span title="TF-IDF Lexical Similarity">Similarity: <strong>{{ candidate.similarity_score|round(1) }}%</strong></span>
+                            {% if candidate.required_skill_score is not none %}
+                            <span title="Required Skills Coverage">Req Skills: <strong>{{ candidate.required_skill_score|round(1) }}%</strong></span>
+                            {% else %}
+                            <span title="Required Skills Coverage" class="text-muted">Req Skills: <strong>Not specified</strong></span>
+                            {% endif %}
+                            {% if candidate.experience_score is not none %}
+                            <span title="Experience & Qualifications">Experience: <strong>{{ candidate.experience_score|round(1) }}%</strong></span>
+                            {% else %}
+                            <span title="Experience & Qualifications" class="text-muted">Experience: <strong>Not found</strong></span>
+                            {% endif %}
+                            {% if candidate.education_score is not none %}
+                            <span title="Education Alignment">Education: <strong>{{ candidate.education_score|round(1) }}%</strong></span>
+                            {% else %}
+                            <span title="Education Alignment" class="text-muted">Education: <strong>Not found</strong></span>
                             {% endif %}
                         </div>
                     </td>

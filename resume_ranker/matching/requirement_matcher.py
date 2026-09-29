@@ -192,11 +192,11 @@ class RequirementMatcher:
                 requirement_id=requirement.id,
                 canonical_name=requirement.canonical_name,
                 req_type=requirement.req_type,
-                status=RequirementMatchStatus.INSUFFICIENT_EVIDENCE,
-                score=0.5,
+                status=RequirementMatchStatus.NOT_FOUND,
+                score=0.0,
                 evidence_refs=[],
-                confidence=0.6,
-                explanation="No structured education entries found in resume.",
+                confidence=0.8,
+                explanation=f"No structured education entries found in resume to satisfy {requirement.canonical_name}.",
             )
 
         # Check degree alignment

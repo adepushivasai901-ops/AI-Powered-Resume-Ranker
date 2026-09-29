@@ -65,10 +65,10 @@ class ScoredCandidateProfile(BaseModel):
     rank: Optional[int] = Field(default=None, ge=1, description="Assigned ranking order")
     final_score: float = Field(..., ge=0.0, le=100.0, description="Overall weighted composite score (0-100)")
     similarity_score: float = Field(default=0.0, ge=0.0, le=100.0, description="TF-IDF / semantic similarity score")
-    required_skill_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Must-have skill coverage score")
-    preferred_skill_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Preferred skill bonus score")
-    experience_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Experience & tenure alignment score")
-    education_score: float = Field(default=100.0, ge=0.0, le=100.0, description="Educational alignment score")
+    required_skill_score: Optional[float] = Field(default=None, ge=0.0, le=100.0, description="Must-have skill coverage score")
+    preferred_skill_score: Optional[float] = Field(default=None, ge=0.0, le=100.0, description="Preferred skill bonus score")
+    experience_score: Optional[float] = Field(default=None, ge=0.0, le=100.0, description="Experience & tenure alignment score")
+    education_score: Optional[float] = Field(default=None, ge=0.0, le=100.0, description="Educational alignment score")
 
     requirement_matches: List[RequirementMatchResult] = Field(
         default_factory=list, description="Granular requirement match results"

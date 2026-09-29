@@ -77,10 +77,26 @@ class HRReportGenerator:
                         "Final Score": c.get("final_score", 0.0),
                         "Evaluation Confidence (%)": int(c.get("confidence", 1.0) * 100),
                         "TF-IDF Similarity (%)": c.get("similarity_score", 0.0),
-                        "Required Skills Score (%)": c.get("required_skill_score", 0.0),
-                        "Preferred Skills Score (%)": c.get("preferred_skill_score", 0.0),
-                        "Experience Score (%)": c.get("experience_score", 0.0),
-                        "Education Score (%)": c.get("education_score", 100.0),
+                        "Required Skills Score (%)": (
+                            f"{c.get('required_skill_score'):.1f}"
+                            if c.get("required_skill_score") is not None
+                            else "Not specified"
+                        ),
+                        "Preferred Skills Score (%)": (
+                            f"{c.get('preferred_skill_score'):.1f}"
+                            if c.get("preferred_skill_score") is not None
+                            else "Not specified"
+                        ),
+                        "Experience Score (%)": (
+                            f"{c.get('experience_score'):.1f}"
+                            if c.get("experience_score") is not None
+                            else "Not found"
+                        ),
+                        "Education Score (%)": (
+                            f"{c.get('education_score'):.1f}"
+                            if c.get("education_score") is not None
+                            else "Not found"
+                        ),
                         "Matched Skills": ", ".join(c.get("matched_required_skills", [])),
                         "Missing Skills": ", ".join(c.get("missing_required_skills", [])),
                         "Total Experience (Years)": c.get("total_experience_years", 0.0),
