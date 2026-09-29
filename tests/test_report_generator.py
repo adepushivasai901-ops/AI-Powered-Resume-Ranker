@@ -44,7 +44,7 @@ def test_generate_csv_report_with_candidates(tmp_path: Path):
     content = report_file.read_text(encoding="utf-8")
     assert "alice.pdf" in content
     assert "92.5" in content
-    assert "Evaluation Confidence" in content
+    assert "Analysis Confidence" in content
 
 
 def test_generate_summary_with_candidates():

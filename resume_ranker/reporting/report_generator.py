@@ -43,16 +43,20 @@ class HRReportGenerator:
             "Rank",
             "Candidate",
             "Final Score",
-            "Evaluation Confidence (%)",
+            "Analysis Confidence (%)",
             "TF-IDF Similarity (%)",
             "Required Skills Score (%)",
             "Preferred Skills Score (%)",
             "Experience Score (%)",
             "Education Score (%)",
-            "Matched Skills",
-            "Missing Skills",
-            "Total Experience (Years)",
-            "Anomalies Detected",
+            "Experience Years",
+            "Education",
+            "Matched Required Skills",
+            "Missing Required Skills",
+            "Matched Preferred Skills",
+            "Claimed Skills",
+            "Resume-Evidenced Skills",
+            "Warnings",
             "Explanation",
         ]
 
@@ -73,9 +77,9 @@ class HRReportGenerator:
                 writer.writerow(
                     {
                         "Rank": c.get("rank", ""),
-                        "Candidate": c.get("candidate_id", ""),
+                        "Candidate": c.get("candidate_name") or c.get("candidate_id", ""),
                         "Final Score": c.get("final_score", 0.0),
-                        "Evaluation Confidence (%)": int(c.get("confidence", 1.0) * 100),
+                        "Analysis Confidence (%)": int(c.get("confidence", 1.0) * 100),
                         "TF-IDF Similarity (%)": c.get("similarity_score", 0.0),
                         "Required Skills Score (%)": (
                             f"{c.get('required_skill_score'):.1f}"
@@ -97,10 +101,14 @@ class HRReportGenerator:
                             if c.get("education_score") is not None
                             else "Not found"
                         ),
-                        "Matched Skills": ", ".join(c.get("matched_required_skills", [])),
-                        "Missing Skills": ", ".join(c.get("missing_required_skills", [])),
-                        "Total Experience (Years)": c.get("total_experience_years", 0.0),
-                        "Anomalies Detected": anomaly_str,
+                        "Experience Years": c.get("total_experience_years", 0.0),
+                        "Education": c.get("education_summary") or ("Not found" if c.get("education_score") is None else "Specified"),
+                        "Matched Required Skills": ", ".join(c.get("matched_required_skills", [])),
+                        "Missing Required Skills": ", ".join(c.get("missing_required_skills", [])),
+                        "Matched Preferred Skills": ", ".join(c.get("matched_preferred_skills", [])),
+                        "Claimed Skills": ", ".join(c.get("claimed_skills", [])),
+                        "Resume-Evidenced Skills": ", ".join(c.get("evidenced_skills", [])),
+                        "Warnings": anomaly_str,
                         "Explanation": c.get("explanation", ""),
                     }
                 )

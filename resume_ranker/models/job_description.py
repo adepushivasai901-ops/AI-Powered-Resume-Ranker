@@ -52,9 +52,39 @@ class ParsedJobDescription(BaseModel):
     min_total_experience_years: Optional[float] = Field(
         default=None, ge=0.0, description="Minimum general career experience in years"
     )
+    max_total_experience_years: Optional[float] = Field(
+        default=None, ge=0.0, description="Maximum experience years if specified as range (e.g. 2-4 years)"
+    )
+    relevant_experience_required: bool = Field(
+        default=False, description="Whether explicit relevant/hands-on experience was demanded"
+    )
     required_degrees: List[str] = Field(default_factory=list, description="Target educational degrees")
     requirements: List[JDRequirement] = Field(
         default_factory=list, description="Atomic extracted requirements"
     )
     detected_skills: List[str] = Field(default_factory=list, description="All normalized skill names found in JD")
     responsibilities: List[str] = Field(default_factory=list, description="Extracted role responsibilities")
+    warnings: List[str] = Field(default_factory=list, description="Recruiter warnings such as low skill count")
+
+    @property
+    def required_skills(self) -> List[str]:
+        """List of canonical skill names marked as must-have requirements."""
+        return [
+            r.canonical_name
+            for r in self.requirements
+            if r.req_type == RequirementType.MUST_HAVE_SKILL
+        ]
+
+    @property
+    def preferred_skills(self) -> List[str]:
+        """List of canonical skill names marked as preferred requirements."""
+        return [
+            r.canonical_name
+            for r in self.requirements
+            if r.req_type == RequirementType.PREFERRED_SKILL
+        ]
+
+    @property
+    def education_level(self) -> Optional[str]:
+        """First target education degree or level if present."""
+        return self.required_degrees[0] if self.required_degrees else None

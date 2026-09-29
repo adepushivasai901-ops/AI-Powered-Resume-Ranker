@@ -145,3 +145,39 @@ def test_download_report_nonexistent_file(client):
     """Verify requesting non-existent report returns 404."""
     response = client.get("/download-report/non_existent_report.csv")
     assert response.status_code == 404
+
+
+def test_review_jd_success(client):
+    """Verify posting job description to /review_jd renders confirmation view."""
+    data = {
+        "job_description": "We need a Senior Python Engineer with SQL, Docker, and AWS. 3+ years experience. Bachelor's required."
+    }
+    response = client.post("/review_jd", data=data)
+    assert response.status_code == 200
+    assert b"Review &amp; Confirm Requirements" in response.data or b"Review & Confirm Requirements" in response.data
+    assert b"Python" in response.data or b"python" in response.data
+
+
+def test_review_jd_empty(client):
+    """Verify posting empty JD to /review_jd redirects gracefully."""
+    response = client.post("/review_jd", data={"job_description": "   "}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Job description is required" in response.data
+
+
+def test_confirmed_workflow_upload(client):
+    """Verify uploading resumes with confirmed=1 uses recruiter parameters."""
+    pdf = _create_sample_pdf("Jane Doe Python SQL Docker")
+    data = {
+        "confirmed": "1",
+        "job_description": "Custom JD",
+        "required_skills": ["Python", "SQL"],
+        "preferred_skills": ["Docker"],
+        "min_experience_years": "2",
+        "education_level": "Bachelor's",
+        "resumes": [(pdf, "jane.pdf")],
+    }
+    response = client.post("/upload", data=data, content_type="multipart/form-data", follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Candidate Rankings" in response.data
+

@@ -558,3 +558,44 @@ body {
     font-size: 0.75rem;
     margin-top: 0.25rem;
 }
+
+/* Recruiter Confirmation Screen & Chips */
+.skill-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.chip-required {
+    background-color: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid #bfdbfe;
+}
+
+.chip-preferred {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.btn-chip-action {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0 0.2rem;
+    color: inherit;
+    opacity: 0.6;
+    border-radius: 4px;
+    transition: opacity 0.15s, background-color 0.15s;
+}
+
+.btn-chip-action:hover {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.08);
+}

@@ -69,7 +69,10 @@
                         </span>
                     </td>
                     <td>
-                        <div class="candidate-title">{{ candidate.candidate_id }}</div>
+                        <div class="candidate-title">{{ candidate.candidate_name or candidate.candidate_id }}</div>
+                        {% if candidate.candidate_name and candidate.candidate_name != candidate.candidate_id %}
+                            <div style="font-size: 0.75rem; color: var(--text-muted); word-break: break-all;">{{ candidate.candidate_id }}</div>
+                        {% endif %}
                         <div class="candidate-meta" style="margin-top: 0.25rem;">
                             {% if candidate.confidence is defined and candidate.confidence < 0.65 %}
                                 <span class="badge badge-warning" title="Low analysis confidence - manual review recommended">
@@ -120,9 +123,9 @@
                         <div class="badge-list">
                             {% for skill in candidate.matched_required_skills %}
                                 {% if candidate.evidenced_skills is defined and skill in candidate.evidenced_skills %}
-                                    <span class="badge badge-success" title="Evidenced in experience/projects">{{ skill }}</span>
+                                    <span class="badge badge-success" title="Resume-Evidenced: Appears with practical context in experience or projects">{{ skill }}</span>
                                 {% elif candidate.claimed_skills is defined and skill in candidate.claimed_skills %}
-                                    <span class="badge badge-info" title="Claimed in skills list (unsubstantiated by experience)">{{ skill }}*</span>
+                                    <span class="badge badge-info" title="Claimed: Listed in skills section without practical context">{{ skill }}*</span>
                                 {% else %}
                                     <span class="badge badge-success">{{ skill }}</span>
                                 {% endif %}
@@ -130,7 +133,7 @@
                                 <span class="text-muted">None</span>
                             {% endfor %}
                             {% for pref in candidate.matched_preferred_skills %}
-                                <span class="badge badge-info" title="Bonus/Preferred">{{ pref }}</span>
+                                <span class="badge badge-info" title="Bonus/Preferred skill">{{ pref }}</span>
                             {% endfor %}
                         </div>
                     </td>
@@ -151,30 +154,40 @@
                 </tr>
                 <tr id="exp-{{ loop.index }}" class="explanation-row" style="display: none;">
                     <td colspan="7">
-                        <div class="explanation-box">
-                            <div style="margin-bottom: 1rem;">
-                                <strong>Scoring Explanation:</strong>
-                                <p>{{ candidate.explanation }}</p>
+                        <div class="explanation-box" style="padding: 1.25rem;">
+                            <!-- Candidate Overview -->
+                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Candidate Overview</h4>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; font-size: 0.88rem;">
+                                    <div><strong>Name:</strong> {{ candidate.candidate_name or candidate.candidate_id }}</div>
+                                    <div><strong>Continuous Experience:</strong> {{ candidate.total_experience_years|default(0.0) }} years</div>
+                                    <div><strong>Education:</strong> {{ candidate.education_summary|default('Not found') }}</div>
+                                    <div><strong>Analysis Confidence:</strong> {{ (candidate.confidence * 100)|int }}%</div>
+                                </div>
+                                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem;">
+                                    <em>Note: Analysis Confidence evaluates document completeness and contextual evidence. It is capped at 88% for self-reported resumes.</em>
+                                </div>
                             </div>
 
+                            <!-- Requirement Matrix -->
                             {% if candidate.requirement_matches %}
-                            <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.75rem;">
-                                <strong style="display: block; margin-bottom: 0.5rem;">Requirement-to-Evidence Matrix:</strong>
-                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 0.75rem;">
+                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Requirement-to-Evidence Matrix</h4>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                                     <thead>
                                         <tr style="background: var(--bg-page); border-bottom: 1px solid var(--border); text-align: left;">
-                                            <th style="padding: 0.4rem 0.6rem;">Requirement</th>
-                                            <th style="padding: 0.4rem 0.6rem;">Category</th>
-                                            <th style="padding: 0.4rem 0.6rem;">Status</th>
-                                            <th style="padding: 0.4rem 0.6rem;">Evaluation & Evidence Excerpt</th>
+                                            <th style="padding: 0.5rem 0.6rem;">Requirement</th>
+                                            <th style="padding: 0.5rem 0.6rem;">Priority</th>
+                                            <th style="padding: 0.5rem 0.6rem;">Status</th>
+                                            <th style="padding: 0.5rem 0.6rem;">Evidence & Context</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for match in candidate.requirement_matches %}
                                         <tr style="border-bottom: 1px solid var(--border);">
-                                            <td style="padding: 0.4rem 0.6rem;"><strong>{{ match.canonical_name }}</strong></td>
-                                            <td style="padding: 0.4rem 0.6rem;"><span class="badge badge-subtle">{{ match.req_type }}</span></td>
-                                            <td style="padding: 0.4rem 0.6rem;">
+                                            <td style="padding: 0.5rem 0.6rem;"><strong>{{ match.canonical_name }}</strong></td>
+                                            <td style="padding: 0.5rem 0.6rem;"><span class="badge badge-subtle">{{ match.req_type }}</span></td>
+                                            <td style="padding: 0.5rem 0.6rem;">
                                                 {% if match.status == 'SATISFIED' %}
                                                     <span class="badge badge-success">Satisfied</span>
                                                 {% elif match.status == 'PARTIALLY_SATISFIED' %}
@@ -183,7 +196,7 @@
                                                     <span class="badge badge-warning">Not Found</span>
                                                 {% endif %}
                                             </td>
-                                            <td style="padding: 0.4rem 0.6rem;">
+                                            <td style="padding: 0.5rem 0.6rem;">
                                                 <div>{{ match.explanation }}</div>
                                                 {% if match.evidence_refs %}
                                                     {% for ref in match.evidence_refs[:2] %}
@@ -200,23 +213,72 @@
                             </div>
                             {% endif %}
 
-                            <div style="margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                                <div>
-                                    <strong>Career Timeline:</strong>
-                                    <span>{{ candidate.total_experience_years|default(0.0) }} years continuous experience</span>
-                                </div>
-                                <div>
-                                    {% if candidate.anomalies %}
-                                        <strong style="color: var(--danger);">Anomalies Flagged:</strong>
-                                        <ul style="margin-left: 1.25rem; font-size: 0.85rem; color: var(--danger);">
-                                            {% for a in candidate.anomalies %}
-                                                <li>[{{ a.severity }}] {{ a.message }}</li>
+                            <!-- Skill Evidence Classification -->
+                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Skill Evidence Breakdown</h4>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; font-size: 0.85rem;">
+                                    <div>
+                                        <strong style="color: var(--success);">Resume-Evidenced Skills (Practical Context):</strong>
+                                        <div class="badge-list" style="margin-top: 0.35rem;">
+                                            {% for s in candidate.evidenced_skills %}
+                                                <span class="badge badge-success">{{ s }}</span>
+                                            {% else %}
+                                                <span class="text-muted">None evidenced in work experience or projects.</span>
                                             {% endfor %}
-                                        </ul>
-                                    {% else %}
-                                        <span class="text-success" style="font-size: 0.85rem;">✓ No chronological discrepancies or prompt injections detected.</span>
-                                    {% endif %}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <strong style="color: var(--info);">Claimed-Only Skills (Listed without Context):</strong>
+                                        <div class="badge-list" style="margin-top: 0.35rem;">
+                                            {% for s in candidate.claimed_skills %}
+                                                <span class="badge badge-info">{{ s }}*</span>
+                                            {% else %}
+                                                <span class="text-muted">None</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
                                 </div>
+                            </div>
+
+                            <!-- Missing Requirements -->
+                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Missing Requirements</h4>
+                                {% if candidate.missing_required_skills %}
+                                    <ul style="margin-left: 1.25rem; font-size: 0.88rem; color: var(--warning);">
+                                        {% for m in candidate.missing_required_skills %}
+                                            <li>Missing required skill: <strong>{{ m }}</strong></li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <span class="text-success" style="font-size: 0.88rem;">✓ All mandatory job requirements satisfied.</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Scoring Breakdown & Weights -->
+                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Scoring Breakdown & Explainability</h4>
+                                <p style="font-size: 0.88rem; margin-bottom: 0.75rem;">{{ candidate.explanation }}</p>
+                                <div style="display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.85rem;">
+                                    <span>TF-IDF Similarity: <strong>{{ candidate.similarity_score }}%</strong></span>
+                                    <span>Req Skills: <strong>{{ candidate.required_skill_score if candidate.required_skill_score is not none else 'N/A' }}%</strong></span>
+                                    <span>Pref Skills: <strong>{{ candidate.preferred_skill_score if candidate.preferred_skill_score is not none else 'N/A' }}%</strong></span>
+                                    <span>Experience: <strong>{{ candidate.experience_score if candidate.experience_score is not none else 'N/A' }}%</strong></span>
+                                    <span>Education: <strong>{{ candidate.education_score if candidate.education_score is not none else 'N/A' }}%</strong></span>
+                                </div>
+                            </div>
+
+                            <!-- Warnings & Anomalies -->
+                            <div style="background: #ffffff; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Integrity Observations & Warnings</h4>
+                                {% if candidate.anomalies %}
+                                    <ul style="margin-left: 1.25rem; font-size: 0.85rem; color: var(--danger);">
+                                        {% for a in candidate.anomalies %}
+                                            <li><strong>[{{ a.severity }}]</strong> {{ a.message }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <span class="text-success" style="font-size: 0.85rem;">✓ No chronological contradictions, overlaps, or adversarial instructions detected.</span>
+                                {% endif %}
                             </div>
                         </div>
                     </td>

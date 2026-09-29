@@ -48,7 +48,7 @@ def test_match_verified_skill_requirement(matcher: RequirementMatcher):
     assert result.status == RequirementMatchStatus.SATISFIED
     assert result.score == 1.0
     assert len(result.evidence_refs) == 1
-    assert "verified" in result.explanation.lower()
+    assert "evidenced" in result.explanation.lower()
 
 
 def test_match_missing_skill_requirement(matcher: RequirementMatcher):

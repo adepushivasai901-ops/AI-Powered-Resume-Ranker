@@ -195,11 +195,15 @@ class SkillIntelligence:
         if env_path and Path(env_path).is_file():
             return Path(env_path)
 
-        # Check standard data/ folder in project
+        # Check canonical package data folder first (independent of CWD)
+        canonical_path = Path(__file__).resolve().parent.parent / "data" / "skills_taxonomy.json"
+        if canonical_path.is_file():
+            return canonical_path.resolve()
+
+        # Fallback candidate paths
         candidate_paths = [
-            Path("data/skills_taxonomy.json"),
-            Path(__file__).resolve().parent.parent / "data" / "skills_taxonomy.json",
             Path(__file__).resolve().parent.parent.parent / "data" / "skills_taxonomy.json",
+            Path("data/skills_taxonomy.json"),
         ]
         for cp in candidate_paths:
             if cp.is_file():
@@ -381,10 +385,10 @@ class SkillIntelligence:
             aliases = sorted(list(data["aliases"]))
 
             if "EXPERIENCE" in sections_present or "PROJECTS" in sections_present:
-                evidence_type = EvidenceType.VERIFIED
+                evidence_type = EvidenceType.RESUME_EVIDENCED
                 confidence = 1.0
             elif "SKILLS" in sections_present:
-                evidence_type = EvidenceType.EXPLICIT
+                evidence_type = EvidenceType.CLAIMED
                 confidence = 0.85
             elif "SUMMARY" in sections_present:
                 evidence_type = EvidenceType.INFERRED

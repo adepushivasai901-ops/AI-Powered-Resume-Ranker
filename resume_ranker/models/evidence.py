@@ -8,11 +8,13 @@ from pydantic import BaseModel, ConfigDict, Field
 class EvidenceType(str, Enum):
     """Classification of how evidence was established for a claim or skill."""
 
-    EXPLICIT = "EXPLICIT"      # Directly declared in dedicated section (e.g., Skills list)
-    VERIFIED = "VERIFIED"      # Directly supported by work experience / project bullet point
-    INFERRED = "INFERRED"      # Derived from context or related tech stack, not explicitly stated
-    UNCERTAIN = "UNCERTAIN"    # Ambiguous token or weak contextual evidence
-    MISSING = "MISSING"        # No supporting evidence found in document
+    CLAIMED = "CLAIMED"                    # Self-declared in dedicated Skills section without role context
+    EXPLICIT = "EXPLICIT"                  # Legacy alias for CLAIMED
+    RESUME_EVIDENCED = "RESUME_EVIDENCED"  # Evidenced in work experience or project context
+    VERIFIED = "VERIFIED"                  # Legacy alias for RESUME_EVIDENCED
+    INFERRED = "INFERRED"                  # Derived from context or related tech stack, not explicitly stated
+    UNCERTAIN = "UNCERTAIN"                # Ambiguous token or weak contextual evidence
+    MISSING = "MISSING"                    # No supporting evidence found in document
 
 
 class BoundingBox(BaseModel):

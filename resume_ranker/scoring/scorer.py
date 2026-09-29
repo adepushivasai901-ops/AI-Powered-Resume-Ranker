@@ -338,11 +338,11 @@ class CandidateScorer:
         # 6. Extract evidenced vs claimed skills distinction
         evidenced_skills = [
             s.canonical_name for s in parsed_resume.skills
-            if s.evidence_type == EvidenceType.VERIFIED
+            if s.evidence_type in [EvidenceType.RESUME_EVIDENCED, EvidenceType.VERIFIED]
         ]
         claimed_skills = [
             s.canonical_name for s in parsed_resume.skills
-            if s.evidence_type in [EvidenceType.EXPLICIT, EvidenceType.INFERRED]
+            if s.evidence_type in [EvidenceType.CLAIMED, EvidenceType.EXPLICIT, EvidenceType.INFERRED]
         ]
 
         # 7. Anomaly checks
@@ -389,8 +389,23 @@ class CandidateScorer:
             if high_anoms:
                 explanation += f" Attention: {'; '.join(high_anoms)}."
 
+        cand_name = (
+            parsed_resume.candidate.name
+            if parsed_resume.candidate and parsed_resume.candidate.name and parsed_resume.candidate.name != "Unknown Candidate"
+            else parsed_resume.document.filename
+        )
+        edu_summary = (
+            ", ".join(
+                f"{e.degree or 'Degree'}{(' in ' + e.field_of_study) if e.field_of_study else ''}"
+                for e in parsed_resume.education
+            )
+            if parsed_resume.education
+            else "Not found"
+        )
+
         return ScoredCandidateProfile(
             candidate_id=parsed_resume.document.filename,
+            candidate_name=cand_name,
             filename=parsed_resume.document.filename,
             final_score=final_score,
             similarity_score=round(scaled_sim, 2),
@@ -398,6 +413,7 @@ class CandidateScorer:
             preferred_skill_score=round(pref_skill_score, 2) if pref_skill_score is not None else None,
             experience_score=round(exp_score, 2) if exp_score is not None else None,
             education_score=round(edu_score, 2) if edu_score is not None else None,
+            education_summary=edu_summary,
             requirement_matches=match_results,
             matched_required_skills=matched_req,
             missing_required_skills=missing_req,
@@ -460,12 +476,15 @@ class CandidateScorer:
             struct_score += 0.10
         struct_factor = min(1.0, struct_score)
 
-        # 3. Evidence Verification Quality Factor
+        # 3. Contextual Evidence Quality Factor
         total_skills = len(parsed_resume.skills)
         if total_skills > 0:
-            verified_count = sum(1 for s in parsed_resume.skills if s.evidence_type == EvidenceType.VERIFIED)
-            verification_ratio = verified_count / total_skills
-            evidence_factor = 0.60 + (0.35 * verification_ratio)
+            evidenced_count = sum(
+                1 for s in parsed_resume.skills
+                if s.evidence_type in [EvidenceType.RESUME_EVIDENCED, EvidenceType.VERIFIED]
+            )
+            evidenced_ratio = evidenced_count / total_skills
+            evidence_factor = 0.60 + (0.35 * evidenced_ratio)
         else:
             evidence_factor = 0.50
 

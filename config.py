@@ -23,7 +23,10 @@ class Config:
     # NLP & Skills Taxonomy configuration
     SPACY_MODEL = os.environ.get("SPACY_MODEL", "en_core_web_sm")
     SKILL_TAXONOMY_PATH = Path(
-        os.environ.get("SKILL_TAXONOMY_PATH", DATA_FOLDER / "skills_taxonomy.json")
+        os.environ.get(
+            "SKILL_TAXONOMY_PATH",
+            BASE_DIR / "resume_ranker" / "data" / "skills_taxonomy.json",
+        )
     )
 
 

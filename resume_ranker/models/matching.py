@@ -61,6 +61,7 @@ class ScoredCandidateProfile(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     candidate_id: str = Field(..., description="Candidate or resume identifier")
+    candidate_name: Optional[str] = Field(default="Unknown Candidate", description="Extracted candidate name")
     filename: Optional[str] = Field(default=None, description="Original filename")
     rank: Optional[int] = Field(default=None, ge=1, description="Assigned ranking order")
     final_score: float = Field(..., ge=0.0, le=100.0, description="Overall weighted composite score (0-100)")
@@ -69,6 +70,7 @@ class ScoredCandidateProfile(BaseModel):
     preferred_skill_score: Optional[float] = Field(default=None, ge=0.0, le=100.0, description="Preferred skill bonus score")
     experience_score: Optional[float] = Field(default=None, ge=0.0, le=100.0, description="Experience & tenure alignment score")
     education_score: Optional[float] = Field(default=None, ge=0.0, le=100.0, description="Educational alignment score")
+    education_summary: Optional[str] = Field(default=None, description="Summary of candidate education qualifications")
 
     requirement_matches: List[RequirementMatchResult] = Field(
         default_factory=list, description="Granular requirement match results"

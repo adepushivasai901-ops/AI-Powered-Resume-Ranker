@@ -1,6 +1,6 @@
 """Requirement-level matching engine: evaluating candidate evidence against structured JD requirements."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 
 from resume_ranker.models.evidence import EvidenceReference, EvidenceType
 from resume_ranker.models.job_description import JDRequirement, RequirementType
@@ -69,16 +69,16 @@ class RequirementMatcher:
         # Check required duration if specified
         min_months = requirement.min_experience_months
 
-        if evidence_type == EvidenceType.VERIFIED:
+        if evidence_type in [EvidenceType.RESUME_EVIDENCED, EvidenceType.VERIFIED]:
             status = RequirementMatchStatus.SATISFIED
             score = 1.0
             explanation = (
-                f"Skill '{requirement.canonical_name}' is verified and evidenced with practical application in "
+                f"Skill '{requirement.canonical_name}' is evidenced with practical application in "
                 f"{', '.join(sections_found) or 'experience records'}."
             )
-        elif evidence_type == EvidenceType.EXPLICIT:
+        elif evidence_type in [EvidenceType.CLAIMED, EvidenceType.EXPLICIT]:
             if min_months and min_months > 12:
-                # Required multiple years but only explicitly listed in skills without role details
+                # Required multiple years but only claimed in skills without role details
                 status = RequirementMatchStatus.PARTIALLY_SATISFIED
                 score = 0.50
                 explanation = (
@@ -182,7 +182,7 @@ class RequirementMatcher:
         self, requirement: JDRequirement, resume: ParsedResume
     ) -> RequirementMatchResult:
         """Match degree requirements against candidate education entries."""
-        req_name = requirement.canonical_name.lower()
+        req_name = f"{requirement.canonical_name} {requirement.original_text} {' '.join(requirement.keywords)}".lower()
         refs: List[EvidenceReference] = []
 
         for edu in resume.education:
@@ -207,16 +207,22 @@ class RequirementMatcher:
                 explanation=f"No structured education entries found in resume to satisfy {requirement.canonical_name}.",
             )
 
-        # Check degree alignment
-        degree_keywords = ["bachelor", "master", "phd", "doctorate"]
-        target_keyword = next((kw for kw in degree_keywords if kw in req_name), None)
+        # Check degree alignment with robust alias and level reasoning
+        satisfied = False
+        partial = False
+        for edu in resume.education:
+            deg = (edu.degree or "").lower()
+            field = (edu.field_of_study or "").lower()
+            cand_edu_text = f"{deg} {field}".strip()
 
-        if target_keyword:
-            has_degree = any(target_keyword in (edu.degree or "").lower() for edu in resume.education)
-        else:
-            has_degree = any(req_name in (edu.degree or "").lower() for edu in resume.education)
+            is_sat, is_part = self._degree_satisfies_requirement(req_name, cand_edu_text)
+            if is_sat:
+                satisfied = True
+                break
+            elif is_part:
+                partial = True
 
-        if has_degree or any("degree" in (edu.degree or "").lower() for edu in resume.education):
+        if satisfied or any("degree" in (edu.degree or "").lower() and "bachelor" in req_name for edu in resume.education):
             return RequirementMatchResult(
                 requirement_id=requirement.id,
                 canonical_name=requirement.canonical_name,
@@ -227,17 +233,78 @@ class RequirementMatcher:
                 confidence=0.9,
                 explanation=f"Candidate satisfies education requirement ({requirement.canonical_name}).",
             )
+        elif partial:
+            return RequirementMatchResult(
+                requirement_id=requirement.id,
+                canonical_name=requirement.canonical_name,
+                req_type=requirement.req_type,
+                status=RequirementMatchStatus.PARTIALLY_SATISFIED,
+                score=0.6,
+                evidence_refs=refs,
+                confidence=0.8,
+                explanation=f"Candidate has related academic history, but target degree ({requirement.canonical_name}) was not fully satisfied.",
+            )
 
         return RequirementMatchResult(
             requirement_id=requirement.id,
             canonical_name=requirement.canonical_name,
             req_type=requirement.req_type,
             status=RequirementMatchStatus.PARTIALLY_SATISFIED,
-            score=0.7,
+            score=0.4,
             evidence_refs=refs,
-            confidence=0.8,
-            explanation=f"Candidate has academic history, but target degree ({requirement.canonical_name}) was not explicitly matched.",
+            confidence=0.75,
+            explanation=f"Candidate has academic history, but target degree ({requirement.canonical_name}) was not matched.",
         )
+
+    @classmethod
+    def _degree_satisfies_requirement(cls, req_name: str, cand_deg: str) -> Tuple[bool, bool]:
+        """Check if candidate degree satisfies or partially satisfies required degree."""
+        r = req_name.lower().strip()
+        c = cand_deg.lower().strip()
+
+        if not c:
+            return False, False
+
+        # Direct string containment
+        if r in c or c in r:
+            return True, False
+
+        bachelor_aliases = {"bachelor", "bachelors", "btech", "b.tech", "be", "b.e", "bs", "b.s", "bsc", "b.sc", "bca", "bba", "undergraduate"}
+        master_aliases = {"master", "masters", "mtech", "m.tech", "me", "m.e", "ms", "m.s", "msc", "m.sc", "mca", "mba", "postgraduate"}
+        phd_aliases = {"phd", "ph.d", "doctorate", "doctor of philosophy"}
+
+        # Acronym equivalences: B.Tech <-> B.E.
+        if any(term in r for term in ["b.tech", "btech", "bachelor of technology"]):
+            if any(term in c for term in ["b.tech", "btech", "bachelor of technology", "b.e", "be", "bachelor of engineering"]):
+                return True, False
+        if any(term in r for term in ["m.tech", "mtech", "master of technology"]):
+            if any(term in c for term in ["m.tech", "mtech", "master of technology", "m.e", "me", "master of engineering"]):
+                return True, False
+        if "mca" in r or "master of computer applications" in r:
+            if "mca" in c or "master of computer applications" in c:
+                return True, False
+        if "mba" in r or "master of business administration" in r:
+            if "mba" in c or "master of business administration" in c:
+                return True, False
+
+        r_is_bach = any(a in r for a in bachelor_aliases)
+        c_is_bach = any(a in c for a in bachelor_aliases)
+        r_is_mast = any(a in r for a in master_aliases)
+        c_is_mast = any(a in c for a in master_aliases)
+        r_is_phd = any(a in r for a in phd_aliases)
+        c_is_phd = any(a in c for a in phd_aliases)
+
+        if r_is_bach and (c_is_bach or c_is_mast or c_is_phd):
+            return True, False
+        if r_is_mast and (c_is_mast or c_is_phd):
+            return True, False
+        if r_is_phd and c_is_phd:
+            return True, False
+
+        if r_is_mast and c_is_bach:
+            return False, True
+
+        return False, False
 
     def _match_generic_requirement(
         self, requirement: JDRequirement, resume: ParsedResume
@@ -265,7 +332,15 @@ class RequirementMatcher:
         )
 
     def match_all_requirements(
-        self, requirements: List[JDRequirement], resume: ParsedResume
+        self,
+        requirements: Optional[List[JDRequirement]] = None,
+        resume: Optional[ParsedResume] = None,
+        parsed_resume: Optional[ParsedResume] = None,
     ) -> List[RequirementMatchResult]:
         """Evaluate all JD requirements against a candidate's parsed resume."""
-        return [self.match_requirement(req, resume) for req in requirements]
+        target_resume = parsed_resume or resume
+        if target_resume is None or requirements is None:
+            return []
+        return [self.match_requirement(req, target_resume) for req in requirements]
+
+    match_requirements = match_all_requirements

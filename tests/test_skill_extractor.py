@@ -91,25 +91,25 @@ def test_evidence_classification_verified_vs_explicit_vs_inferred(skill_engine: 
     skills = skill_engine.extract_and_verify_resume_skills(sections)
     skill_dict = {s.canonical_name: s for s in skills}
 
-    # Python & Docker are in SKILLS and demonstrated in EXPERIENCE -> VERIFIED
+    # Python & Docker are in SKILLS and demonstrated in EXPERIENCE -> RESUME_EVIDENCED
     assert "python" in skill_dict
-    assert skill_dict["python"].evidence_type == EvidenceType.VERIFIED
+    assert skill_dict["python"].evidence_type in [EvidenceType.RESUME_EVIDENCED, EvidenceType.VERIFIED]
     assert skill_dict["python"].confidence == 1.0
 
     assert "docker" in skill_dict
-    assert skill_dict["docker"].evidence_type == EvidenceType.VERIFIED
+    assert skill_dict["docker"].evidence_type in [EvidenceType.RESUME_EVIDENCED, EvidenceType.VERIFIED]
 
-    # PyTorch is in PROJECTS -> VERIFIED
+    # PyTorch is in PROJECTS -> RESUME_EVIDENCED
     assert "pytorch" in skill_dict
-    assert skill_dict["pytorch"].evidence_type == EvidenceType.VERIFIED
+    assert skill_dict["pytorch"].evidence_type in [EvidenceType.RESUME_EVIDENCED, EvidenceType.VERIFIED]
 
-    # SQL and Kubernetes only in SKILLS list -> EXPLICIT
+    # SQL and Kubernetes only in SKILLS list -> CLAIMED
     assert "sql" in skill_dict
-    assert skill_dict["sql"].evidence_type == EvidenceType.EXPLICIT
+    assert skill_dict["sql"].evidence_type in [EvidenceType.CLAIMED, EvidenceType.EXPLICIT]
     assert skill_dict["sql"].confidence == 0.85
 
     assert "kubernetes" in skill_dict
-    assert skill_dict["kubernetes"].evidence_type == EvidenceType.EXPLICIT
+    assert skill_dict["kubernetes"].evidence_type in [EvidenceType.CLAIMED, EvidenceType.EXPLICIT]
 
     # Verify evidence references are attached
     assert len(skill_dict["python"].evidence_refs) >= 2  # Found in both SKILLS and EXPERIENCE

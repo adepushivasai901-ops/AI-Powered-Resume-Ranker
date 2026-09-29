@@ -34,23 +34,78 @@ class ResumeParser:
         self.skill_engine = skill_engine or SkillIntelligence()
         self.temporal_engine = temporal_engine or TemporalEngine()
 
-    def parse_candidate_info(self, raw_text: str, header_lines: List[str]) -> CandidateInfo:
-        """Extract candidate email, phone, and plausible display name."""
+    NON_NAME_TOKENS = {
+        "resume", "curriculum", "vitae", "cv", "portfolio", "profile", "summary",
+        "contact", "experience", "education", "skills", "projects", "certifications",
+        "engineer", "developer", "designer", "manager", "architect", "lead", "specialist",
+        "analyst", "consultant", "scientist", "programmer", "administrator", "director",
+        "intern", "phone", "email", "address", "github", "linkedin", "page", "university",
+        "college", "institute", "school", "technologies", "languages", "tools",
+    }
+
+    DEGREE_PATTERNS = [
+        (r"(?i)\b(?:ph\.?d|doctorate|doctor of philosophy)\b", "Ph.D."),
+        (r"(?i)\b(?:m\.?tech|master of technology)\b", "M.Tech"),
+        (r"(?i)\b(?:m\.?e\.?|master of engineering)\b", "M.E."),
+        (r"(?i)\b(?:mca|master of computer applications)\b", "MCA"),
+        (r"(?i)\b(?:mba|master of business administration)\b", "MBA"),
+        (r"(?i)\b(?:master(?:'s)?(?:\s+degree)?|\bm\.?s\.?|\bm\.?sc)\b", "Master's Degree"),
+        (r"(?i)\b(?:b\.?tech|bachelor of technology)\b", "B.Tech"),
+        (r"(?i)\b(?:b\.?e\.?|bachelor of engineering)\b", "B.E."),
+        (r"(?i)\b(?:bca|bachelor of computer applications)\b", "BCA"),
+        (r"(?i)\b(?:bba|bachelor of business administration)\b", "BBA"),
+        (r"(?i)\b(?:bachelor(?:'s)?(?:\s+degree)?|\bb\.?s\.?|\bb\.?sc)\b", "Bachelor's Degree"),
+        (r"(?i)\b(?:associate(?:'s)?(?:\s+degree)?|\ba\.?s\.?|\ba\.?a\.?)\b", "Associate Degree"),
+        (r"(?i)\bdiploma\b", "Diploma"),
+    ]
+
+    def parse_candidate_info(
+        self, raw_text: str, header_lines: Optional[List[str]] = None
+    ) -> CandidateInfo:
+        """Extract candidate email, phone, links, and reliable display name without fabrication."""
         email_match = re.search(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", raw_text)
         email = email_match.group(0) if email_match else None
 
         phone_match = re.search(r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}", raw_text)
         phone = phone_match.group(0) if phone_match else None
 
-        name = None
-        for line in header_lines[:3]:
-            cleaned = line.strip()
-            # If line is 2-4 capitalized words without email or symbols
-            if cleaned and not "@" and len(cleaned.split()) in [2, 3, 4] and not re.search(r"\d", cleaned):
-                name = cleaned
-                break
+        # Extract links
+        links = re.findall(
+            r"(?i)\b(?:https?://|www\.)[^\s,;()]+|(?:linkedin\.com/in/[^\s,;()]+)|(?:github\.com/[^\s,;()]+)",
+            raw_text,
+        )
 
-        return CandidateInfo(name=name, email=email, phone=phone)
+        if header_lines is None:
+            header_lines = [l.strip() for l in raw_text.splitlines()[:10] if l.strip()]
+
+        name = None
+        for line in header_lines[:5]:
+            cleaned = line.strip()
+            if not cleaned:
+                continue
+
+            # Skip lines with contact information or links
+            if "@" in cleaned or re.search(r"(?i)https?://|www\.|\.com|\.io|\.org|\.net|github|linkedin", cleaned):
+                continue
+            if re.search(r"\d", cleaned):
+                continue
+            if re.search(r"[-–—|/]", cleaned) and len(cleaned.split()) > 2:
+                continue
+
+            words = [w.strip(".,;:()") for w in cleaned.split() if w.strip(".,;:()")]
+            if len(words) in [2, 3, 4]:
+                lower_words = [w.lower() for w in words]
+                if any(w in self.NON_NAME_TOKENS for w in lower_words):
+                    continue
+                # Ensure each word starts with a capital letter
+                if all(w[0].isupper() and w.isalpha() for w in words):
+                    name = " ".join(words)
+                    break
+
+        if not name:
+            name = "Unknown Candidate"
+
+        return CandidateInfo(name=name, email=email, phone=phone, links=links)
 
     def parse_experience_items(self, experience_lines: List[str]) -> List[ExperienceItem]:
         """Extract job roles, companies, and date intervals from experience section lines."""
@@ -89,7 +144,7 @@ class ResumeParser:
                         EvidenceReference(
                             section="EXPERIENCE",
                             text_snippet=line_str,
-                            evidence_type=EvidenceType.VERIFIED,
+                            evidence_type=EvidenceType.RESUME_EVIDENCED,
                         )
                     ],
                 )
@@ -101,32 +156,43 @@ class ResumeParser:
         return experiences
 
     def parse_education_items(self, education_lines: List[str]) -> List[EducationItem]:
-        """Extract academic qualifications, degrees, and institutions."""
+        """Extract academic qualifications, degrees, institutions, and fields of study."""
         items: List[EducationItem] = []
         for line in education_lines:
             line_str = line.strip()
             if not line_str:
                 continue
 
-            # Look for degree tokens
             degree = None
-            if re.search(r"(?i)\bbachelor(?:'s)?\b|\bb\.?s\.?\b|\bb\.?tech\b", line_str):
-                degree = "Bachelor's Degree"
-            elif re.search(r"(?i)\bmaster(?:'s)?\b|\bm\.?s\.?\b|\bm\.?tech\b", line_str):
-                degree = "Master's Degree"
-            elif re.search(r"(?i)\bph\.?d\b", line_str):
-                degree = "Ph.D."
+            for pattern, canonical_deg in self.DEGREE_PATTERNS:
+                if re.search(pattern, line_str):
+                    degree = canonical_deg
+                    break
 
             if degree:
+                # Extract field of study (e.g. "in Computer Science")
+                field_match = re.search(r"(?i)\bin\s+([A-Za-z\s/&-]+?)(?:,|\(|$|\d{4})", line_str)
+                field_of_study = field_match.group(1).strip() if field_match else None
+
+                # Extract graduation year
+                year_match = re.search(r"\b(19\d{2}|20\d{2})\b", line_str)
+                grad_year = int(year_match.group(1)) if year_match else None
+
+                # Extract institution if separated by from / at / comma
+                inst_match = re.search(r"(?i)(?:from|at)\s+([A-Za-z\s/&.-]+?)(?:,|\(|$|\d{4})", line_str)
+                institution = inst_match.group(1).strip() if inst_match else line_str
+
                 items.append(
                     EducationItem(
                         degree=degree,
-                        institution=line_str,
+                        field_of_study=field_of_study,
+                        institution=institution,
+                        graduation_year=grad_year,
                         evidence_refs=[
                             EvidenceReference(
                                 section="EDUCATION",
                                 text_snippet=line_str,
-                                evidence_type=EvidenceType.EXPLICIT,
+                                evidence_type=EvidenceType.CLAIMED,
                             )
                         ],
                     )
