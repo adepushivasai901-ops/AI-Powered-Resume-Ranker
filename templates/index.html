@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Screen & Rank Resumes - AI-Powered Resume Ranker{% endblock %}
+
+{% block content %}
+<section class="card upload-card">
+    <div class="card-header">
+        <h2>Resume Screening & Ranking</h2>
+        <p class="section-desc">
+            Upload candidate resumes in PDF format along with your target job description.
+            The system applies SpaCy preprocessing, TF-IDF lexical matching, and multi-component scoring to prioritize candidates.
+        </p>
+    </div>
+
+    <form id="uploadForm" action="{{ url_for('main.upload_resumes') }}" method="POST" enctype="multipart/form-data" class="upload-form">
+        <div class="form-group">
+            <div class="label-row">
+                <label for="job_description">Job Description Requirements:</label>
+                <button type="button" id="loadSampleJdBtn" class="btn-text">Load Sample Data Science JD</button>
+            </div>
+            <textarea
+                id="job_description"
+                name="job_description"
+                rows="8"
+                placeholder="Paste the target job description here. Include key skills, qualifications, and role requirements (e.g. Python, SQL, AWS, Docker, Machine Learning)..."
+                required
+            ></textarea>
+            <small class="field-hint">Key technical skills mentioned in the job description will be automatically detected and matched against applicant profiles.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="resumes">Candidate Resumes (PDF only):</label>
+            <div class="file-drop-area" id="fileDropArea">
+                <span class="file-icon">📄</span>
+                <span class="file-msg">Drag & drop PDF resumes here, or click to browse</span>
+                <input type="file" id="resumes" name="resumes" accept=".pdf" multiple required class="file-input">
+            </div>
+            <div id="fileSelectionInfo" class="file-selection-info" style="display: none;">
+                <strong>Selected Resumes (<span id="fileCount">0</span>):</strong>
+                <ul id="fileList" class="file-list"></ul>
+            </div>
+            <small class="field-hint">You can upload multiple PDF resumes simultaneously. Max upload size per request is 16 MB.</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" id="submitBtn" class="btn btn-primary btn-large">
+                <span class="btn-text-content">Analyze & Rank Candidates</span>
+                <span class="btn-spinner" style="display: none;">Processing NLP Pipeline...</span>
+            </button>
+        </div>
+    </form>
+</section>
+{% endblock %}

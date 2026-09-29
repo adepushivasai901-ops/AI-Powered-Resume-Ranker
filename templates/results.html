@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Screening Results - AI-Powered Resume Ranker{% endblock %}
+
+{% block content %}
+{% if candidates %}
+<section class="card results-header-card">
+    <div class="results-header">
+        <div>
+            <h2>Candidate Rankings & Screening Results</h2>
+            <p class="subtitle">Evaluated {{ candidates|length }} candidate resume(s) against target job description requirements.</p>
+            {% if timestamp %}
+                <small class="timestamp-tag">Screening executed: {{ timestamp }}</small>
+            {% endif %}
+        </div>
+        <div class="actions">
+            {% if report_filename %}
+                <a href="{{ url_for('main.download_report', filename=report_filename) }}" class="btn btn-secondary">
+                    ⬇ Download HR Report (.csv)
+                </a>
+            {% endif %}
+            <a href="{{ url_for('main.index') }}" class="btn btn-outline">New Screening</a>
+        </div>
+    </div>
+
+    <!-- Metrics Summary Cards -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <span class="metric-label">Total Evaluated</span>
+            <span class="metric-value">{{ candidates|length }}</span>
+        </div>
+        <div class="metric-card">
+            <span class="metric-label">Top Score</span>
+            <span class="metric-value text-success">{{ candidates[0].final_score }}</span>
+        </div>
+        <div class="metric-card">
+            <span class="metric-label">Top Candidate</span>
+            <span class="metric-value text-truncate">{{ candidates[0].candidate_id }}</span>
+        </div>
+        {% if summary_metrics and summary_metrics.average_score %}
+        <div class="metric-card">
+            <span class="metric-label">Average Score</span>
+            <span class="metric-value">{{ summary_metrics.average_score }}</span>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="card table-card">
+    <div class="table-container">
+        <table class="table ranking-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Rank</th>
+                    <th>Candidate / File</th>
+                    <th style="width: 140px;">Final Score</th>
+                    <th>Sub-Score Breakdown</th>
+                    <th>Matched Skills</th>
+                    <th>Missing Skills</th>
+                    <th style="width: 110px;">Audit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for candidate in candidates %}
+                <tr class="candidate-row">
+                    <td>
+                        <span class="rank-badge {% if candidate.rank == 1 %}rank-first{% elif candidate.rank <= 3 %}rank-top{% endif %}">
+                            #{{ candidate.rank }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="candidate-title">{{ candidate.candidate_id }}</div>
+                        <div class="candidate-meta" style="margin-top: 0.25rem;">
+                            {% if candidate.confidence is defined and candidate.confidence < 0.7 %}
+                                <span class="badge badge-warning" title="Quality/extraction confidence warning">
+                                    {{ (candidate.confidence * 100)|int }}% Confidence
+                                </span>
+                            {% elif candidate.confidence is defined %}
+                                <span class="badge badge-subtle" title="High confidence evaluation">
+                                    {{ (candidate.confidence * 100)|int }}% Confidence
+                                </span>
+                            {% endif %}
+                            {% if candidate.anomalies %}
+                                <span class="badge badge-warning" title="{{ candidate.anomalies|length }} integrity issue(s) detected">
+                                    ⚠ {{ candidate.anomalies|length }} Flag(s)
+                                </span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="score-pill {% if candidate.final_score >= 75 %}score-high{% elif candidate.final_score >= 50 %}score-mid{% else %}score-low{% endif %}">
+                            {{ candidate.final_score }}<small>/100</small>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="subscore-list">
+                            <span title="TF-IDF Lexical Similarity">Similarity: <strong>{{ candidate.similarity_score }}%</strong></span>
+                            <span title="Required Skills Coverage">Req Skills: <strong>{{ candidate.required_skill_score }}%</strong></span>
+                            <span title="Experience & Qualifications">Experience: <strong>{{ candidate.experience_score }}%</strong></span>
+                            {% if candidate.education_score is defined %}
+                            <span title="Education Alignment">Education: <strong>{{ candidate.education_score }}%</strong></span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="badge-list">
+                            {% for skill in candidate.matched_required_skills %}
+                                <span class="badge badge-success">{{ skill }}</span>
+                            {% else %}
+                                <span class="text-muted">None</span>
+                            {% endfor %}
+                            {% for pref in candidate.matched_preferred_skills %}
+                                <span class="badge badge-info" title="Bonus/Preferred">{{ pref }}</span>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="badge-list">
+                            {% for skill in candidate.missing_required_skills %}
+                                <span class="badge badge-warning">{{ skill }}</span>
+                            {% else %}
+                                <span class="badge badge-subtle">None missing</span>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline toggle-explanation" data-target="exp-{{ loop.index }}">
+                            Details
+                        </button>
+                    </td>
+                </tr>
+                <tr id="exp-{{ loop.index }}" class="explanation-row" style="display: none;">
+                    <td colspan="7">
+                        <div class="explanation-box">
+                            <div style="margin-bottom: 1rem;">
+                                <strong>Scoring Explanation:</strong>
+                                <p>{{ candidate.explanation }}</p>
+                            </div>
+
+                            {% if candidate.requirement_matches %}
+                            <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.75rem;">
+                                <strong style="display: block; margin-bottom: 0.5rem;">Requirement-to-Evidence Matrix:</strong>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 0.75rem;">
+                                    <thead>
+                                        <tr style="background: var(--bg-page); border-bottom: 1px solid var(--border); text-align: left;">
+                                            <th style="padding: 0.4rem 0.6rem;">Requirement</th>
+                                            <th style="padding: 0.4rem 0.6rem;">Category</th>
+                                            <th style="padding: 0.4rem 0.6rem;">Status</th>
+                                            <th style="padding: 0.4rem 0.6rem;">Evaluation & Evidence Excerpt</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for match in candidate.requirement_matches %}
+                                        <tr style="border-bottom: 1px solid var(--border);">
+                                            <td style="padding: 0.4rem 0.6rem;"><strong>{{ match.canonical_name }}</strong></td>
+                                            <td style="padding: 0.4rem 0.6rem;"><span class="badge badge-subtle">{{ match.req_type }}</span></td>
+                                            <td style="padding: 0.4rem 0.6rem;">
+                                                {% if match.status == 'SATISFIED' %}
+                                                    <span class="badge badge-success">Satisfied</span>
+                                                {% elif match.status == 'PARTIALLY_SATISFIED' %}
+                                                    <span class="badge badge-info">Partial</span>
+                                                {% else %}
+                                                    <span class="badge badge-warning">Not Found</span>
+                                                {% endif %}
+                                            </td>
+                                            <td style="padding: 0.4rem 0.6rem;">
+                                                <div>{{ match.explanation }}</div>
+                                                {% if match.evidence_refs %}
+                                                    {% for ref in match.evidence_refs[:2] %}
+                                                        <div style="font-style: italic; color: var(--text-muted); font-size: 0.8rem; margin-top: 0.2rem;">
+                                                            &ldquo;{{ ref.text_snippet }}&rdquo;
+                                                        </div>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endif %}
+
+                            <div style="margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                                <div>
+                                    <strong>Career Timeline:</strong>
+                                    <span>{{ candidate.total_experience_years|default(0.0) }} years continuous experience</span>
+                                </div>
+                                <div>
+                                    {% if candidate.anomalies %}
+                                        <strong style="color: var(--danger);">Anomalies Flagged:</strong>
+                                        <ul style="margin-left: 1.25rem; font-size: 0.85rem; color: var(--danger);">
+                                            {% for a in candidate.anomalies %}
+                                                <li>[{{ a.severity }}] {{ a.message }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <span class="text-success" style="font-size: 0.85rem;">✓ No chronological discrepancies or prompt injections detected.</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% else %}
+<section class="card empty-card">
+    <div class="empty-state">
+        <span class="empty-icon">📊</span>
+        <h3>No candidate ranking results available yet</h3>
+        <p>You have not uploaded any candidate resumes yet. Please run an initial screening to generate scores and rankings.</p>
+        <div class="empty-actions">
+            <a href="{{ url_for('main.index') }}" class="btn btn-primary">Start New Screening</a>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

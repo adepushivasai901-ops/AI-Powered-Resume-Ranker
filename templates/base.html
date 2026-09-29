@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI-Powered Resume Ranker{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="app-header">
+        <div class="container header-container">
+            <div class="brand">
+                <h1><a href="{{ url_for('main.index') }}">AI-Powered Resume Ranker</a></h1>
+                <p class="subtitle">Intelligent Recruitment & Candidate Scoring Decision Support</p>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('main.index') }}" class="nav-link">Screening</a>
+                <a href="{{ url_for('main.results') }}" class="nav-link">Results</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="app-footer">
+        <div class="container">
+            <p>&copy; AI-Powered Resume Ranker. Decision-support tool for HR professionals.</p>
+            <p class="footer-note">Statistical NLP & TF-IDF decision-support engine. Final hiring decisions remain with human recruiters.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

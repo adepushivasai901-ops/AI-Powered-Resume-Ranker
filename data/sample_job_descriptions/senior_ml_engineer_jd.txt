@@ -1,0 +1,12 @@
+Position: Senior Machine Learning Engineer
+
+About the Role:
+We are seeking an experienced Senior Machine Learning Engineer to lead the design and deployment of intelligent recruitment and search algorithms.
+
+Key Requirements:
+- 3+ years of hands-on experience in Machine Learning and software development.
+- Strong proficiency in Python and SQL.
+- Deep experience in NLP, PyTorch, and Scikit-learn.
+- Demonstrated experience deploying containerized applications with Docker and AWS.
+- Proficiency in database systems such as PostgreSQL and version control with Git.
+- Excellent analytical problem-solving skills and collaborative mindset.
