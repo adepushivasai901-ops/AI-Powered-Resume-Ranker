@@ -90,7 +90,9 @@ class CandidateScorer:
         if not skill or not isinstance(skill, str):
             return ""
         cleaned = skill.strip().lower()
-        return self.SKILL_SYNONYMS.get(cleaned, cleaned)
+        from resume_ranker.nlp.skill_extractor import SkillIntelligence
+        normalized = SkillIntelligence().normalize_skill_name(cleaned)
+        return self.SKILL_SYNONYMS.get(normalized, normalized)
 
     def score_candidate(
         self,
@@ -333,18 +335,28 @@ class CandidateScorer:
             if m.status in [RequirementMatchStatus.NOT_FOUND, RequirementMatchStatus.INSUFFICIENT_EVIDENCE]
         ]
 
-        # 6. Anomaly checks
+        # 6. Extract evidenced vs claimed skills distinction
+        evidenced_skills = [
+            s.canonical_name for s in parsed_resume.skills
+            if s.evidence_type == EvidenceType.VERIFIED
+        ]
+        claimed_skills = [
+            s.canonical_name for s in parsed_resume.skills
+            if s.evidence_type in [EvidenceType.EXPLICIT, EvidenceType.INFERRED]
+        ]
+
+        # 7. Anomaly checks
         anomaly_detector = AnomalyDetector()
         anomalies = anomaly_detector.detect_anomalies(parsed_resume, quality_report)
 
-        # 7. Analysis Confidence estimation
+        # 8. Analysis Confidence estimation
         confidence = self.compute_analysis_confidence(
             parsed_resume=parsed_resume,
             quality_report=quality_report,
             anomalies=anomalies,
         )
 
-        # 8. Human-interpretable explanation
+        # 9. Human-interpretable explanation
         active_breakdown_parts = []
         for name, w in active_weights.items():
             eff_pct = (w / total_active_w) * 100.0 if total_active_w > 0 else 0.0
@@ -391,6 +403,8 @@ class CandidateScorer:
             missing_required_skills=missing_req,
             matched_preferred_skills=matched_pref,
             missing_preferred_skills=missing_pref,
+            evidenced_skills=evidenced_skills,
+            claimed_skills=claimed_skills,
             anomalies=anomalies,
             total_experience_years=parsed_resume.timeline.total_experience_years,
             confidence=confidence,

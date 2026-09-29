@@ -119,7 +119,13 @@
                     <td>
                         <div class="badge-list">
                             {% for skill in candidate.matched_required_skills %}
-                                <span class="badge badge-success">{{ skill }}</span>
+                                {% if candidate.evidenced_skills is defined and skill in candidate.evidenced_skills %}
+                                    <span class="badge badge-success" title="Evidenced in experience/projects">{{ skill }}</span>
+                                {% elif candidate.claimed_skills is defined and skill in candidate.claimed_skills %}
+                                    <span class="badge badge-info" title="Claimed in skills list (unsubstantiated by experience)">{{ skill }}*</span>
+                                {% else %}
+                                    <span class="badge badge-success">{{ skill }}</span>
+                                {% endif %}
                             {% else %}
                                 <span class="text-muted">None</span>
                             {% endfor %}

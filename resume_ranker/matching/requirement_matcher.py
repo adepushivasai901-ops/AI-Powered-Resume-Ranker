@@ -6,6 +6,7 @@ from resume_ranker.models.evidence import EvidenceReference, EvidenceType
 from resume_ranker.models.job_description import JDRequirement, RequirementType
 from resume_ranker.models.matching import RequirementMatchResult, RequirementMatchStatus
 from resume_ranker.models.resume import ParsedResume, SkillItem
+from resume_ranker.nlp.skill_extractor import SkillIntelligence
 
 
 class RequirementMatcher:
@@ -38,12 +39,13 @@ class RequirementMatcher:
         self, requirement: JDRequirement, resume: ParsedResume
     ) -> RequirementMatchResult:
         """Match skill requirement against candidate's extracted canonical skills and sections."""
-        canonical_target = requirement.canonical_name.lower().strip()
+        skill_engine = SkillIntelligence()
+        canonical_target = skill_engine.normalize_skill_name(requirement.canonical_name.lower().strip())
 
-        # Find matching skill item in candidate profile
+        # Find matching skill item in candidate profile (matching either canonical or alias)
         skill_item: Optional[SkillItem] = None
         for s in resume.skills:
-            if s.canonical_name.lower() == canonical_target:
+            if s.canonical_name.lower() == canonical_target or skill_engine.normalize_skill_name(s.canonical_name) == canonical_target:
                 skill_item = s
                 break
 
@@ -71,29 +73,35 @@ class RequirementMatcher:
             status = RequirementMatchStatus.SATISFIED
             score = 1.0
             explanation = (
-                f"Skill '{requirement.canonical_name}' is verified with practical experience in "
+                f"Skill '{requirement.canonical_name}' is verified and evidenced with practical application in "
                 f"{', '.join(sections_found) or 'experience records'}."
             )
         elif evidence_type == EvidenceType.EXPLICIT:
             if min_months and min_months > 12:
                 # Required multiple years but only explicitly listed in skills without role details
                 status = RequirementMatchStatus.PARTIALLY_SATISFIED
-                score = 0.75
+                score = 0.50
                 explanation = (
-                    f"Skill '{requirement.canonical_name}' is listed in Technical Skills, but requires "
-                    f"{min_months // 12} years verified in work experience."
+                    f"Skill '{requirement.canonical_name}' is claimed in Technical Skills, but lacks "
+                    f"required {min_months // 12}+ years of demonstrated experience in work history."
                 )
             else:
-                status = RequirementMatchStatus.SATISFIED
-                score = 0.90
-                explanation = f"Skill '{requirement.canonical_name}' is explicitly listed in candidate skills."
+                status = RequirementMatchStatus.PARTIALLY_SATISFIED
+                score = 0.70
+                explanation = (
+                    f"Skill '{requirement.canonical_name}' is claimed in candidate skills list, but not "
+                    "substantiated by work experience or project evidence."
+                )
         elif evidence_type == EvidenceType.INFERRED:
             status = RequirementMatchStatus.PARTIALLY_SATISFIED
-            score = 0.60
-            explanation = f"Skill '{requirement.canonical_name}' was inferred from summary or adjacent tools."
+            score = 0.45
+            explanation = (
+                f"Skill '{requirement.canonical_name}' was inferred from summary or adjacent tools; "
+                "lacking demonstrated work evidence."
+            )
         else:
             status = RequirementMatchStatus.INSUFFICIENT_EVIDENCE
-            score = 0.40
+            score = 0.20
             explanation = f"Vague or uncertain mention of '{requirement.canonical_name}' in resume."
 
         return RequirementMatchResult(

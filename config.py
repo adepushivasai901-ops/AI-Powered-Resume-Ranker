@@ -20,8 +20,11 @@ class Config:
     ALLOWED_EXTENSIONS = {"pdf"}
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB max upload size
 
-    # NLP / SpaCy configuration
+    # NLP & Skills Taxonomy configuration
     SPACY_MODEL = os.environ.get("SPACY_MODEL", "en_core_web_sm")
+    SKILL_TAXONOMY_PATH = Path(
+        os.environ.get("SKILL_TAXONOMY_PATH", DATA_FOLDER / "skills_taxonomy.json")
+    )
 
 
 class DevelopmentConfig(Config):

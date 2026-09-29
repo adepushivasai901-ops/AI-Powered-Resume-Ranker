@@ -77,6 +77,8 @@ class ScoredCandidateProfile(BaseModel):
     missing_required_skills: List[str] = Field(default_factory=list, description="Missing required skills")
     matched_preferred_skills: List[str] = Field(default_factory=list, description="Satisfied preferred skills")
     missing_preferred_skills: List[str] = Field(default_factory=list, description="Missing preferred skills")
+    evidenced_skills: List[str] = Field(default_factory=list, description="Skills evidenced in experience or projects")
+    claimed_skills: List[str] = Field(default_factory=list, description="Skills claimed in skills lists without experience/project evidence")
 
     anomalies: List[AnomalyFlag] = Field(default_factory=list, description="Detected resume anomalies")
     total_experience_years: float = Field(default=0.0, ge=0.0, description="Computed continuous experience years")
