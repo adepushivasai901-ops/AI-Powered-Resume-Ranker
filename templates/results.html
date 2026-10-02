@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Screening Results - AI-Powered Resume Ranker{% endblock %}
+{% block title %}Screening Results — ResumeAI{% endblock %}
 
 {% block content %}
 {% if candidates %}
 <section class="card results-header-card">
     <div class="results-header">
         <div>
-            <h2>Candidate Rankings & Screening Results</h2>
+            <h2>Candidate Rankings &amp; Screening Results</h2>
             <p class="subtitle">Evaluated {{ candidates|length }} candidate resume(s) against target job description requirements.</p>
             {% if timestamp %}
                 <small class="timestamp-tag">Screening executed: {{ timestamp }}</small>
@@ -16,41 +16,52 @@
         <div class="actions">
             {% if report_filename %}
                 <a href="{{ url_for('main.download_report', filename=report_filename) }}" class="btn btn-secondary">
-                    ⬇ Download HR Report (.csv)
+                    <svg class="icon-svg icon-sm" viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Download HR Report (.csv)</span>
                 </a>
             {% endif %}
-            <a href="{{ url_for('main.index') }}" class="btn btn-outline">New Screening</a>
+            <a href="{{ url_for('main.index') }}" class="btn btn-outline">
+                <svg class="icon-svg icon-sm" viewBox="0 0 24 24">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>New Screening</span>
+            </a>
         </div>
     </div>
 
     <!-- Metrics Summary Cards -->
-    <div class="metrics-grid">
-        <div class="metric-card">
-            <span class="metric-label">Total Evaluated</span>
-            <span class="metric-value">{{ candidates|length }}</span>
+    <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); min-height: auto; margin-bottom: 0;">
+        <div class="metric-card" style="min-height: 100px; padding: 16px;">
+            <span class="card-top-label" style="margin-bottom: 4px;">TOTAL EVALUATED</span>
+            <span style="font-size: 1.75rem; font-weight: 800; color: var(--text-main);">{{ candidates|length }}</span>
         </div>
-        <div class="metric-card">
-            <span class="metric-label">Top Score</span>
-            <span class="metric-value text-success">{{ candidates[0].final_score }}</span>
+        <div class="metric-card" style="min-height: 100px; padding: 16px;">
+            <span class="card-top-label" style="margin-bottom: 4px;">TOP SCORE</span>
+            <span style="font-size: 1.75rem; font-weight: 800; color: var(--success);">{{ candidates[0].final_score }}</span>
         </div>
-        <div class="metric-card">
-            <span class="metric-label">Top Candidate</span>
-            <span class="metric-value text-truncate">{{ candidates[0].candidate_id }}</span>
+        <div class="metric-card" style="min-height: 100px; padding: 16px;">
+            <span class="card-top-label" style="margin-bottom: 4px;">TOP CANDIDATE</span>
+            <span style="font-size: 1.125rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ candidates[0].candidate_id }}</span>
         </div>
         {% if summary_metrics and summary_metrics.average_score %}
-        <div class="metric-card">
-            <span class="metric-label">Average Score</span>
-            <span class="metric-value">{{ summary_metrics.average_score }}</span>
+        <div class="metric-card" style="min-height: 100px; padding: 16px;">
+            <span class="card-top-label" style="margin-bottom: 4px;">AVERAGE SCORE</span>
+            <span style="font-size: 1.75rem; font-weight: 800; color: var(--primary);">{{ summary_metrics.average_score }}</span>
         </div>
         {% endif %}
     </div>
 </section>
 
-<section class="card table-card">
-    <div class="table-container">
-        <table class="table ranking-table">
+<section class="card table-card" style="padding: 0; overflow: hidden;">
+    <div class="table-container" style="overflow-x: auto;">
+        <table class="ranking-table">
             <thead>
-                <tr>
+                <tr style="background: var(--bg-subtle);">
                     <th style="width: 80px;">Rank</th>
                     <th>Candidate / File</th>
                     <th style="width: 140px;">Final Score</th>
@@ -69,11 +80,11 @@
                         </span>
                     </td>
                     <td>
-                        <div class="candidate-title">{{ candidate.candidate_name or candidate.candidate_id }}</div>
+                        <div style="font-weight: 600; color: var(--text-main);">{{ candidate.candidate_name or candidate.candidate_id }}</div>
                         {% if candidate.candidate_name and candidate.candidate_name != candidate.candidate_id %}
                             <div style="font-size: 0.75rem; color: var(--text-muted); word-break: break-all;">{{ candidate.candidate_id }}</div>
                         {% endif %}
-                        <div class="candidate-meta" style="margin-top: 0.25rem;">
+                        <div class="candidate-meta" style="margin-top: 0.25rem; display: flex; gap: 4px; flex-wrap: wrap;">
                             {% if candidate.confidence is defined and candidate.confidence < 0.65 %}
                                 <span class="badge badge-warning" title="Low analysis confidence - manual review recommended">
                                     {{ (candidate.confidence * 100)|int }}% Confidence
@@ -89,7 +100,8 @@
                             {% endif %}
                             {% if candidate.anomalies %}
                                 <span class="badge badge-warning" title="{{ candidate.anomalies|length }} integrity issue(s) detected">
-                                    ⚠ {{ candidate.anomalies|length }} Flag(s)
+                                    <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path></svg>
+                                    <span>{{ candidate.anomalies|length }} Flag(s)</span>
                                 </span>
                             {% endif %}
                         </div>
@@ -130,7 +142,7 @@
                                     <span class="badge badge-success">{{ skill }}</span>
                                 {% endif %}
                             {% else %}
-                                <span class="text-muted">None</span>
+                                <span class="text-muted" style="font-size: 0.75rem;">None</span>
                             {% endfor %}
                             {% for pref in candidate.matched_preferred_skills %}
                                 <span class="badge badge-info" title="Bonus/Preferred skill">{{ pref }}</span>
@@ -154,32 +166,32 @@
                 </tr>
                 <tr id="exp-{{ loop.index }}" class="explanation-row" style="display: none;">
                     <td colspan="7">
-                        <div class="explanation-box" style="padding: 1.25rem;">
+                        <div class="explanation-box" style="padding: 1.5rem; background: var(--bg-subtle);">
                             <!-- Candidate Overview -->
-                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
-                                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Candidate Overview</h4>
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; font-size: 0.88rem;">
+                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                                <h4 style="margin-bottom: 0.5rem; font-size: 0.9375rem; font-weight: 700; color: var(--text-main);">Candidate Overview</h4>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; font-size: 0.875rem;">
                                     <div><strong>Name:</strong> {{ candidate.candidate_name or candidate.candidate_id }}</div>
                                     <div><strong>Continuous Experience:</strong> {{ candidate.total_experience_years|default(0.0) }} years</div>
                                     <div><strong>Education:</strong> {{ candidate.education_summary|default('Not found') }}</div>
                                     <div><strong>Analysis Confidence:</strong> {{ (candidate.confidence * 100)|int }}%</div>
                                 </div>
-                                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem;">
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
                                     <em>Note: Analysis Confidence evaluates document completeness and contextual evidence. It is capped at 88% for self-reported resumes.</em>
                                 </div>
                             </div>
 
                             <!-- Requirement Matrix -->
                             {% if candidate.requirement_matches %}
-                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
-                                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Requirement-to-Evidence Matrix</h4>
+                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                                <h4 style="margin-bottom: 0.5rem; font-size: 0.9375rem; font-weight: 700; color: var(--text-main);">Requirement-to-Evidence Matrix</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                                     <thead>
                                         <tr style="background: var(--bg-page); border-bottom: 1px solid var(--border); text-align: left;">
                                             <th style="padding: 0.5rem 0.6rem;">Requirement</th>
                                             <th style="padding: 0.5rem 0.6rem;">Priority</th>
                                             <th style="padding: 0.5rem 0.6rem;">Status</th>
-                                            <th style="padding: 0.5rem 0.6rem;">Evidence & Context</th>
+                                            <th style="padding: 0.5rem 0.6rem;">Evidence &amp; Context</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -214,8 +226,8 @@
                             {% endif %}
 
                             <!-- Skill Evidence Classification -->
-                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
-                                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Skill Evidence Breakdown</h4>
+                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                                <h4 style="margin-bottom: 0.5rem; font-size: 0.9375rem; font-weight: 700; color: var(--text-main);">Skill Evidence Breakdown</h4>
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; font-size: 0.85rem;">
                                     <div>
                                         <strong style="color: var(--success);">Resume-Evidenced Skills (Practical Context):</strong>
@@ -241,24 +253,27 @@
                             </div>
 
                             <!-- Missing Requirements -->
-                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
-                                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Missing Requirements</h4>
+                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                                <h4 style="margin-bottom: 0.5rem; font-size: 0.9375rem; font-weight: 700; color: var(--text-main);">Missing Requirements</h4>
                                 {% if candidate.missing_required_skills %}
-                                    <ul style="margin-left: 1.25rem; font-size: 0.88rem; color: var(--warning);">
+                                    <ul style="margin-left: 1.25rem; font-size: 0.875rem; color: var(--warning);">
                                         {% for m in candidate.missing_required_skills %}
                                             <li>Missing required skill: <strong>{{ m }}</strong></li>
                                         {% endfor %}
                                     </ul>
                                 {% else %}
-                                    <span class="text-success" style="font-size: 0.88rem;">✓ All mandatory job requirements satisfied.</span>
+                                    <span class="text-success" style="font-size: 0.875rem; display: inline-flex; align-items: center; gap: 4px;">
+                                        <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        <span>All mandatory job requirements satisfied.</span>
+                                    </span>
                                 {% endif %}
                             </div>
 
                             <!-- Scoring Breakdown & Weights -->
-                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
-                                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Scoring Breakdown & Explainability</h4>
-                                <p style="font-size: 0.88rem; margin-bottom: 0.75rem;">{{ candidate.explanation }}</p>
-                                <div style="display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.85rem;">
+                            <div style="margin-bottom: 1.25rem; background: #ffffff; padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                                <h4 style="margin-bottom: 0.5rem; font-size: 0.9375rem; font-weight: 700; color: var(--text-main);">Scoring Breakdown &amp; Explainability</h4>
+                                <p style="font-size: 0.875rem; margin-bottom: 0.75rem; color: var(--text-secondary);">{{ candidate.explanation }}</p>
+                                <div style="display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.8125rem;">
                                     <span>TF-IDF Similarity: <strong>{{ candidate.similarity_score }}%</strong></span>
                                     <span>Req Skills: <strong>{{ candidate.required_skill_score if candidate.required_skill_score is not none else 'N/A' }}%</strong></span>
                                     <span>Pref Skills: <strong>{{ candidate.preferred_skill_score if candidate.preferred_skill_score is not none else 'N/A' }}%</strong></span>
@@ -268,16 +283,19 @@
                             </div>
 
                             <!-- Warnings & Anomalies -->
-                            <div style="background: #ffffff; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border);">
-                                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Integrity Observations & Warnings</h4>
+                            <div style="background: #ffffff; padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                                <h4 style="margin-bottom: 0.5rem; font-size: 0.9375rem; font-weight: 700; color: var(--text-main);">Integrity Observations &amp; Warnings</h4>
                                 {% if candidate.anomalies %}
-                                    <ul style="margin-left: 1.25rem; font-size: 0.85rem; color: var(--danger);">
+                                    <ul style="margin-left: 1.25rem; font-size: 0.8125rem; color: var(--danger);">
                                         {% for a in candidate.anomalies %}
                                             <li><strong>[{{ a.severity }}]</strong> {{ a.message }}</li>
                                         {% endfor %}
                                     </ul>
                                 {% else %}
-                                    <span class="text-success" style="font-size: 0.85rem;">✓ No chronological contradictions, overlaps, or adversarial instructions detected.</span>
+                                    <span class="text-success" style="font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 4px;">
+                                        <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        <span>No chronological contradictions, overlaps, or adversarial instructions detected.</span>
+                                    </span>
                                 {% endif %}
                             </div>
                         </div>
@@ -290,11 +308,17 @@
 </section>
 
 {% else %}
-<section class="card empty-card">
+<section class="card empty-card" style="text-align: center; padding: 48px 24px; max-width: 600px; margin: 40px auto;">
     <div class="empty-state">
-        <span class="empty-icon">📊</span>
+        <div class="drop-icon-box" style="margin: 0 auto 16px;">
+            <svg class="icon-svg icon-lg" viewBox="0 0 24 24">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+        </div>
         <h3>No candidate ranking results available yet</h3>
-        <p>You have not uploaded any candidate resumes yet. Please run an initial screening to generate scores and rankings.</p>
+        <p class="section-desc" style="margin: 12px auto 24px; max-width: 440px;">You have not uploaded any candidate resumes yet. Please run an initial screening to generate scores and rankings.</p>
         <div class="empty-actions">
             <a href="{{ url_for('main.index') }}" class="btn btn-primary">Start New Screening</a>
         </div>

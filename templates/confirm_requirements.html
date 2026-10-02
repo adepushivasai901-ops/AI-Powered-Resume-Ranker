@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Review & Confirm Requirements - AI-Powered Resume Ranker{% endblock %}
+{% block title %}Review & Confirm Requirements — ResumeAI{% endblock %}
 
 {% block content %}
-<section class="card upload-card">
+<section class="card upload-card" style="max-width: 900px;">
     <div class="card-header">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-            <h2>Review & Confirm Requirements</h2>
-            <span class="badge badge-info" style="font-size: 0.85rem;">Step 2 of 2: Recruiter Review</span>
+            <h2>Review &amp; Confirm Requirements</h2>
+            <span class="badge badge-info" style="font-size: 0.8125rem;">Step 2 of 2: Recruiter Review</span>
         </div>
-        <p class="section-desc">
+        <p class="section-desc" style="margin-top: 6px;">
             The NLP parser extracted the following job requirements. Review, edit, add, or toggle priority
             (Required vs Preferred) to tune scoring before screening candidate resumes.
         </p>
@@ -17,12 +17,21 @@
 
     {% if warnings %}
     <div class="alert alert-warning" style="margin-bottom: 1.5rem;">
-        <h4 style="margin-bottom: 0.4rem; font-size: 0.95rem; font-weight: 600;">⚠️ Parser Observation & Recommendations</h4>
-        <ul style="margin-left: 1.25rem; font-size: 0.88rem;">
-            {% for w in warnings %}
-                <li>{{ w }}</li>
-            {% endfor %}
-        </ul>
+        <span class="alert-icon">
+            <svg class="icon-svg icon-sm" viewBox="0 0 24 24">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+        </span>
+        <div class="alert-text">
+            <h4 style="margin-bottom: 0.4rem; font-size: 0.9375rem; font-weight: 600;">Parser Observations &amp; Recommendations</h4>
+            <ul style="margin-left: 1.25rem; font-size: 0.8125rem;">
+                {% for w in warnings %}
+                    <li>{{ w }}</li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
     {% endif %}
 
@@ -31,9 +40,12 @@
         <textarea name="job_description" style="display: none;">{{ job_description }}</textarea>
 
         {% if staged_files %}
-        <div style="margin-bottom: 1.5rem; background: var(--info-bg); border: 1px solid #bae6fd; padding: 1rem; border-radius: var(--radius);">
-            <strong style="color: var(--info); font-size: 0.9rem;">📄 Resumes Staged from Step 1 ({{ staged_files|length }} files):</strong>
-            <ul style="margin: 0.4rem 0 0 1.25rem; font-size: 0.85rem; color: var(--text-main);">
+        <div style="margin-bottom: 1.5rem; background: var(--info-bg); border: 1px solid var(--info-border); padding: 1rem; border-radius: var(--radius);">
+            <strong style="color: var(--info); font-size: 0.875rem; display: flex; align-items: center; gap: 6px;">
+                <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                <span>Resumes Staged from Step 1 ({{ staged_files|length }} files):</span>
+            </strong>
+            <ul style="margin: 0.4rem 0 0 1.5rem; font-size: 0.8125rem; color: var(--text-main);">
                 {% for orig_name, stored_name in staged_files %}
                     <li>
                         {{ orig_name }}
@@ -49,9 +61,9 @@
         <div class="form-group" style="margin-bottom: 1.5rem;">
             <div class="label-row">
                 <label><strong>Must-Have / Required Skills</strong></label>
-                <small class="field-hint">Essential skills. Missing skills will directly reduce coverage scores.</small>
+                <small class="field-hint" style="color: var(--text-muted); font-size: 0.8125rem;">Essential skills. Missing skills will directly reduce coverage scores.</small>
             </div>
-            <div id="requiredSkillsContainer" class="chips-container" style="min-height: 48px; border: 1px dashed var(--border); padding: 0.75rem; border-radius: var(--radius); display: flex; flex-wrap: wrap; gap: 0.5rem; background: #fafafa;">
+            <div id="requiredSkillsContainer" class="chips-container" style="min-height: 52px; border: 1px dashed var(--border); padding: 0.75rem; border-radius: var(--radius); display: flex; flex-wrap: wrap; gap: 0.5rem; background: #fafbfc;">
                 {% for skill in required_skills %}
                 <div class="skill-chip chip-required" data-skill="{{ skill }}">
                     <span class="chip-name">{{ skill }}</span>
@@ -60,7 +72,7 @@
                     <button type="button" class="btn-chip-action remove-chip" title="Remove requirement">✕</button>
                 </div>
                 {% else %}
-                <span class="text-muted empty-chip-notice" style="font-size: 0.85rem; align-self: center;">No required skills extracted. Add requirements below.</span>
+                <span class="text-muted empty-chip-notice" style="font-size: 0.8125rem; align-self: center;">No required skills extracted. Add requirements below.</span>
                 {% endfor %}
             </div>
         </div>
@@ -69,9 +81,9 @@
         <div class="form-group" style="margin-bottom: 1.5rem;">
             <div class="label-row">
                 <label><strong>Nice-to-Have / Preferred Skills</strong></label>
-                <small class="field-hint">Bonus competencies that give candidates a scoring boost when present.</small>
+                <small class="field-hint" style="color: var(--text-muted); font-size: 0.8125rem;">Bonus competencies that give candidates a scoring boost when present.</small>
             </div>
-            <div id="preferredSkillsContainer" class="chips-container" style="min-height: 48px; border: 1px dashed var(--border); padding: 0.75rem; border-radius: var(--radius); display: flex; flex-wrap: wrap; gap: 0.5rem; background: #fafafa;">
+            <div id="preferredSkillsContainer" class="chips-container" style="min-height: 52px; border: 1px dashed var(--border); padding: 0.75rem; border-radius: var(--radius); display: flex; flex-wrap: wrap; gap: 0.5rem; background: #fafbfc;">
                 {% for skill in preferred_skills %}
                 <div class="skill-chip chip-preferred" data-skill="{{ skill }}">
                     <span class="chip-name">{{ skill }}</span>
@@ -80,16 +92,16 @@
                     <button type="button" class="btn-chip-action remove-chip" title="Remove requirement">✕</button>
                 </div>
                 {% else %}
-                <span class="text-muted empty-chip-notice" style="font-size: 0.85rem; align-self: center;">No preferred skills extracted.</span>
+                <span class="text-muted empty-chip-notice" style="font-size: 0.8125rem; align-self: center;">No preferred skills extracted.</span>
                 {% endfor %}
             </div>
         </div>
 
         <!-- Add Custom Skill Toolbar -->
-        <div class="form-group" style="background: var(--bg-page); padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 1.5rem;">
-            <label for="newSkillInput" style="font-size: 0.85rem; font-weight: 600;">Add Custom Requirement</label>
+        <div class="form-group" style="background: var(--bg-subtle); padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 1.5rem;">
+            <label for="newSkillInput" style="font-size: 0.8125rem; font-weight: 600; display: block; margin-bottom: 4px;">Add Custom Requirement</label>
             <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
-                <input type="text" id="newSkillInput" placeholder="Skill name (e.g. FastAPI, Figma, Kubernetes, Docker)..." style="flex: 1; min-width: 220px; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius);">
+                <input type="text" id="newSkillInput" placeholder="Skill name (e.g. FastAPI, Figma, Kubernetes, Docker)..." style="flex: 1; min-width: 220px; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.875rem;">
                 <button type="button" id="addRequiredBtn" class="btn btn-secondary btn-sm">+ Add as Required</button>
                 <button type="button" id="addPreferredBtn" class="btn btn-outline btn-sm">+ Add as Preferred</button>
             </div>
@@ -98,7 +110,7 @@
         <!-- Experience & Education Settings -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
             <div class="form-group">
-                <label for="min_experience_years">Minimum Experience (Years):</label>
+                <label for="min_experience_years" style="font-size: 0.875rem; font-weight: 600; margin-bottom: 4px; display: block;">Minimum Experience (Years):</label>
                 <input
                     type="number"
                     step="0.5"
@@ -108,11 +120,11 @@
                     name="min_experience_years"
                     value="{{ min_experience if min_experience is not none else '' }}"
                     placeholder="e.g. 3"
-                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius);"
+                    class="form-control"
                 >
             </div>
             <div class="form-group">
-                <label for="max_experience_years">Maximum Experience (Years, optional):</label>
+                <label for="max_experience_years" style="font-size: 0.875rem; font-weight: 600; margin-bottom: 4px; display: block;">Maximum Experience (Years, optional):</label>
                 <input
                     type="number"
                     step="0.5"
@@ -122,25 +134,25 @@
                     name="max_experience_years"
                     value="{{ max_experience if max_experience is not none else '' }}"
                     placeholder="e.g. 5"
-                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius);"
+                    class="form-control"
                 >
             </div>
             <div class="form-group">
-                <label for="education_level">Education Degree Requirement:</label>
+                <label for="education_level" style="font-size: 0.875rem; font-weight: 600; margin-bottom: 4px; display: block;">Education Degree Requirement:</label>
                 <input
                     type="text"
                     id="education_level"
                     name="education_level"
                     value="{{ education_level }}"
                     placeholder="e.g. Bachelor's, Master's, B.Tech, or None"
-                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius);"
+                    class="form-control"
                 >
             </div>
         </div>
 
         <!-- Resume Upload Section -->
         <div class="form-group" style="margin-bottom: 1.5rem;">
-            <label for="resumes">
+            <label for="resumes" style="font-size: 0.875rem; font-weight: 600; margin-bottom: 6px; display: block;">
                 {% if staged_files %}
                     Upload Additional Resumes (PDF only, optional):
                 {% else %}
@@ -148,8 +160,16 @@
                 {% endif %}
             </label>
             <div class="file-drop-area" id="fileDropArea">
-                <span class="file-icon">📄</span>
-                <span class="file-msg">Drag & drop PDF resumes here, or click to browse</span>
+                <div class="file-drop-content">
+                    <div class="drop-icon-box">
+                        <svg class="icon-svg" viewBox="0 0 24 24">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                    <span class="file-prompt-title">Drag &amp; drop PDF resumes here, or browse files</span>
+                </div>
                 <input
                     type="file"
                     id="resumes"
@@ -161,17 +181,25 @@
                 >
             </div>
             <div id="fileSelectionInfo" class="file-selection-info" style="display: none;">
-                <strong>Selected Resumes (<span id="fileCount">0</span>):</strong>
-                <ul id="fileList" class="file-list"></ul>
+                <strong style="font-size: 0.875rem;">Selected Resumes (<span id="fileCount">0</span>):</strong>
+                <ul id="fileList" class="file-list" style="margin-left: 1.25rem; font-size: 0.8125rem; margin-top: 4px;"></ul>
             </div>
         </div>
 
         <div class="form-actions" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
             <button type="submit" id="submitBtn" class="btn btn-primary btn-large">
-                <span class="btn-text-content">Confirm Requirements & Analyze Resumes</span>
-                <span class="btn-spinner" style="display: none;">Processing NLP Pipeline...</span>
+                <span class="btn-text-content">
+                    <svg class="icon-svg icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span>Confirm Requirements &amp; Analyze Resumes</span>
+                </span>
+                <span class="btn-spinner" style="display: none;">
+                    <span class="spinner-circle"></span> Processing NLP Pipeline...
+                </span>
             </button>
-            <a href="{{ url_for('main.index') }}" class="btn btn-outline">← Back to Edit Job Description</a>
+            <a href="{{ url_for('main.index') }}" class="btn btn-outline">
+                <svg class="icon-svg icon-sm" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <span>Back to Edit Job Description</span>
+            </a>
         </div>
     </form>
 </section>
