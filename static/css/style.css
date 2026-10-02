@@ -14,7 +14,7 @@
     --bg-subtle-hover: #e2e8f0;
     --border: #e2e8f0;
     --border-hover: #cbd5e1;
-    --border-focus: #3b82f6;
+    --border-focus: #2563eb;
 
     /* Color Palette - Typography */
     --text-main: #0f172a;
@@ -34,7 +34,7 @@
     --secondary-hover: #334155;
     --secondary-light: #f1f5f9;
 
-    /* Semantic States: Success */
+    /* Semantic States: Success (WCAG AA Compliant) */
     --success: #16a34a;
     --success-hover: #15803d;
     --success-bg: #f0fdf4;
@@ -135,6 +135,12 @@ body {
     border: 0;
 }
 
+/* Focus styles for keyboard accessibility */
+:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+
 /* Container */
 .container {
     max-width: var(--max-width);
@@ -157,11 +163,11 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.02em;
 }
 
-h1 { font-size: 1.875rem; } /* 30px */
-h2 { font-size: 1.5rem; }   /* 24px */
-h3 { font-size: 1.25rem; }  /* 20px */
-h4 { font-size: 1.0625rem; }/* 17px */
-h5 { font-size: 0.9375rem; }/* 15px */
+h1 { font-size: 1.875rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.0625rem; }
+h5 { font-size: 0.9375rem; }
 
 p {
     color: var(--text-secondary);
@@ -293,13 +299,14 @@ a:hover {
 }
 
 .mode-btn {
-    padding: 5px 14px;
+    padding: 6px 16px;
     font-size: 0.8125rem;
     font-weight: 500;
     color: var(--text-muted);
     border-radius: var(--radius-full);
     text-decoration: none;
     transition: all 0.15s ease;
+    white-space: nowrap;
 }
 
 .mode-btn:hover {
@@ -367,11 +374,6 @@ a:hover {
     white-space: nowrap;
     text-decoration: none;
     line-height: 1.25;
-}
-
-.btn:focus-visible {
-    outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
 }
 
 .btn-primary {
@@ -529,7 +531,7 @@ a:hover {
 }
 
 /* --------------------------------------------------------------------------
-   7. Cards & Containers
+   7. Cards & Badges
    -------------------------------------------------------------------------- */
 .card {
     background: var(--bg-card);
@@ -643,7 +645,6 @@ a:hover {
     margin: 0 auto;
 }
 
-/* Upload Card & Stepper */
 .upload-card {
     max-width: 820px;
     margin: 0 auto var(--space-10);
@@ -656,16 +657,11 @@ a:hover {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--primary);
     margin-bottom: var(--space-2);
 }
 
 .section-label {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-main);
 }
@@ -833,7 +829,6 @@ textarea.form-control {
     min-height: 110px;
 }
 
-/* Upload Actions */
 .upload-actions {
     display: flex;
     align-items: center;
@@ -1345,13 +1340,13 @@ textarea.form-control {
     border-bottom: 1px solid var(--border);
     margin-bottom: var(--space-6);
     overflow-x: auto;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     padding-bottom: 2px;
 }
 
 .dashboard-tabs::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    display: none;
 }
 
 .tab-btn {
@@ -1468,6 +1463,9 @@ textarea.form-control {
 .sec-quick-note {
     font-size: 0.75rem;
     line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 /* ATS Detailed Checks */
@@ -1732,6 +1730,8 @@ textarea.form-control {
     background: var(--bg-subtle);
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
+    display: flex;
+    align-items: flex-start;
 }
 
 .bullet-example-box {
@@ -1745,7 +1745,9 @@ textarea.form-control {
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--success-text);
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 4px;
     margin-bottom: 2px;
 }
 
@@ -1783,6 +1785,8 @@ textarea.form-control {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
 }
 
 .clean-list {
@@ -1917,6 +1921,7 @@ textarea.form-control {
 .priority-filter-buttons {
     display: flex;
     gap: 6px;
+    flex-wrap: wrap;
 }
 
 .filter-pill {
@@ -2297,5 +2302,52 @@ textarea.form-control {
     .footer-content {
         flex-direction: column;
         align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0 var(--space-4);
+    }
+
+    .hero-title {
+        font-size: 1.625rem;
+    }
+
+    .score-display {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .bullet-metrics-row {
+        grid-template-columns: 1fr;
+    }
+
+    .skills-summary-banner {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   16. Print Styles
+   -------------------------------------------------------------------------- */
+@media print {
+    .app-header,
+    .app-footer,
+    .dashboard-tabs,
+    .header-actions,
+    .upload-actions {
+        display: none !important;
+    }
+
+    body {
+        background: #ffffff;
+        color: #000000;
+    }
+
+    .card {
+        box-shadow: none;
+        border: 1px solid #cccccc;
+        break-inside: avoid;
     }
 }
