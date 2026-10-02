@@ -4,10 +4,16 @@
 
 {% block content %}
 {% if not analysis %}
-<div class="empty-state-card card text-center">
-    <div class="empty-icon">📊</div>
+<div class="empty-state-card card text-center" style="max-width: 600px; margin: 40px auto; text-align: center; padding: 48px 24px;">
+    <div class="drop-icon-box" style="margin: 0 auto 16px;">
+        <svg class="icon-svg icon-lg" viewBox="0 0 24 24">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+    </div>
     <h2>No Resume Analysis Available</h2>
-    <p class="section-desc">Upload your resume in PDF format to receive your personalized Resume Health Score, ATS Readiness Audit, and actionable career recommendations.</p>
+    <p class="section-desc" style="margin: 12px auto 24px; max-width: 440px;">Upload your resume in PDF format to receive your personalized Resume Health Score, ATS Readiness Audit, and actionable career recommendations.</p>
     <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-large">Upload Resume Now</a>
 </div>
 {% else %}
@@ -20,22 +26,64 @@
         <div class="candidate-info">
             <h1 class="candidate-title">{{ analysis.candidate_name }}</h1>
             <div class="candidate-tags">
-                <span class="meta-tag">📄 {{ analysis.filename }}</span>
-                {% if analysis.email %}<span class="meta-tag">✉️ {{ analysis.email }}</span>{% endif %}
-                {% if analysis.phone %}<span class="meta-tag">📞 {{ analysis.phone }}</span>{% endif %}
-                <span class="meta-tag">💼 {{ analysis.total_experience_display }}</span>
-                <span class="meta-tag">🕒 Analyzed: {{ analysis.created_at or timestamp }}</span>
+                <span class="meta-tag">
+                    <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    <span>{{ analysis.filename }}</span>
+                </span>
+                {% if analysis.email %}
+                <span class="meta-tag">
+                    <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+                        <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                    </svg>
+                    <span>{{ analysis.email }}</span>
+                </span>
+                {% endif %}
+                {% if analysis.phone %}
+                <span class="meta-tag">
+                    <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    <span>{{ analysis.phone }}</span>
+                </span>
+                {% endif %}
+                <span class="meta-tag">
+                    <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+                        <rect width="20" height="14" x="2" y="7" rx="2" ry="2"></rect>
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                    </svg>
+                    <span>{{ analysis.total_experience_display }}</span>
+                </span>
+                <span class="meta-tag">
+                    <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>Analyzed: {{ analysis.created_at or timestamp }}</span>
+                </span>
             </div>
         </div>
     </div>
     <div class="header-actions">
         {% if report_filename %}
         <a href="{{ url_for('main.download_analysis', filename=report_filename) }}" class="btn btn-secondary">
-            📥 Download Resume Analysis (CSV)
+            <svg class="icon-svg icon-sm" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Download Resume Analysis</span>
         </a>
         {% endif %}
         <a href="{{ url_for('main.index') }}" class="btn btn-outline">
-            Upload Another Resume
+            <svg class="icon-svg icon-sm" viewBox="0 0 24 24">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Upload Another Resume</span>
         </a>
     </div>
 </div>
@@ -46,15 +94,31 @@
     <div class="metric-card score-card health-card">
         <div class="card-top-label">
             <span>RESUME HEALTH SCORE</span>
-            <span class="help-tooltip" title="Composite 7-factor score with dynamic weight renormalization for missing sections.">ℹ️</span>
+            <span class="help-tooltip" title="Composite 7-factor score with dynamic weight renormalization for missing sections.">
+                <svg class="icon-svg icon-xs text-muted" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+            </span>
         </div>
         <div class="score-display">
-            <div class="score-circle {% if analysis.health_score.overall_score >= 80 %}score-high{% elif analysis.health_score.overall_score >= 65 %}score-mid{% else %}score-low{% endif %}">
-                <span class="score-number">{{ analysis.health_score.overall_score|round|int }}</span>
-                <span class="score-max">/100</span>
+            <div class="score-ring-container">
+                <svg class="score-ring-svg" viewBox="0 0 76 76">
+                    <circle class="score-ring-bg" cx="38" cy="38" r="32"></circle>
+                    <circle class="score-ring-fill {% if analysis.health_score.overall_score >= 80 %}stroke-high{% elif analysis.health_score.overall_score >= 65 %}stroke-mid{% else %}stroke-low{% endif %}" 
+                            cx="38" cy="38" r="32" 
+                            stroke-dasharray="201.06" 
+                            stroke-dashoffset="{{ (201.06 - (201.06 * (analysis.health_score.overall_score / 100)))|round(2) }}">
+                    </circle>
+                </svg>
+                <div class="score-ring-text">
+                    <span class="score-ring-number">{{ analysis.health_score.overall_score|round|int }}</span>
+                    <span class="score-ring-max">/100</span>
+                </div>
             </div>
             <div class="score-context">
-                <span class="rating-badge {% if analysis.health_score.overall_score >= 80 %}badge-success{% elif analysis.health_score.overall_score >= 65 %}badge-warning{% else %}badge-danger{% endif %}">
+                <span class="badge {% if analysis.health_score.overall_score >= 80 %}badge-success{% elif analysis.health_score.overall_score >= 65 %}badge-warning{% else %}badge-danger{% endif %}">
                     {{ analysis.health_score.label.split('—')[0].strip() }}
                 </span>
                 <p class="score-summary-text">{{ analysis.health_score.label }}</p>
@@ -63,14 +127,14 @@
         <div class="sub-components-list">
             {% for key, comp in analysis.health_score.components.items() %}
             <div class="sub-component-row">
-                <span class="comp-name">{{ comp.name }}</span>
+                <span class="comp-name" title="{{ comp.name }}">{{ comp.name }}</span>
                 {% if comp.is_active and comp.score is not none %}
                 <div class="comp-bar-wrapper">
                     <div class="comp-bar-fill {% if comp.score >= 80 %}fill-high{% elif comp.score >= 65 %}fill-mid{% else %}fill-low{% endif %}" style="width: {{ comp.score }}%;"></div>
                 </div>
                 <span class="comp-val">{{ comp.score|round|int }}%</span>
                 {% else %}
-                <span class="comp-status-badge badge-neutral">Not Detected</span>
+                <span class="badge badge-neutral" style="font-size: 0.6875rem;">Not Detected</span>
                 {% endif %}
             </div>
             {% endfor %}
@@ -90,10 +154,19 @@
                 {{ analysis.ats_readiness.score|round|int }}%
             </div>
             <div class="ats-counts">
-                <span class="stat-pill pill-pass">✓ {{ analysis.ats_readiness.passed_count }} Passed</span>
-                <span class="stat-pill pill-warn">⚠ {{ analysis.ats_readiness.warning_count }} Warnings</span>
+                <span class="stat-pill pill-pass">
+                    <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span>{{ analysis.ats_readiness.passed_count }} Passed</span>
+                </span>
+                <span class="stat-pill pill-warn">
+                    <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path></svg>
+                    <span>{{ analysis.ats_readiness.warning_count }} Warnings</span>
+                </span>
                 {% if analysis.ats_readiness.failed_count > 0 %}
-                <span class="stat-pill pill-fail">✕ {{ analysis.ats_readiness.failed_count }} Issues</span>
+                <span class="stat-pill pill-fail">
+                    <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    <span>{{ analysis.ats_readiness.failed_count }} Issues</span>
+                </span>
                 {% endif %}
             </div>
         </div>
@@ -101,13 +174,22 @@
             {% for check in analysis.ats_readiness.checks[:4] %}
             <div class="ats-preview-item">
                 <span class="check-icon {% if check.status.value == 'PASSED' %}icon-pass{% elif check.status.value == 'WARNING' %}icon-warn{% else %}icon-fail{% endif %}">
-                    {% if check.status.value == 'PASSED' %}✓{% elif check.status.value == 'WARNING' %}⚠{% else %}✕{% endif %}
+                    {% if check.status.value == 'PASSED' %}
+                        <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    {% elif check.status.value == 'WARNING' %}
+                        <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path></svg>
+                    {% else %}
+                        <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    {% endif %}
                 </span>
                 <span class="check-title">{{ check.title }}</span>
             </div>
             {% endfor %}
         </div>
-        <button class="btn btn-text switch-tab-btn" data-target="ats-tab">View All ATS Checks →</button>
+        <button type="button" class="btn btn-text switch-tab-btn" data-target="ats-tab">
+            <span>View All ATS Checks</span>
+            <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
     </div>
 
     <!-- Card 3: Optional Job Match or Tailoring Callout -->
@@ -148,12 +230,24 @@
             {% endfor %}
         </div>
         {% endif %}
-        <button class="btn btn-text switch-tab-btn" data-target="jobmatch-tab">View Job Match Breakdown →</button>
+        <button type="button" class="btn btn-text switch-tab-btn" data-target="jobmatch-tab">
+            <span>View Job Match Breakdown</span>
+            <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
         {% else %}
         <div class="no-jd-card-content">
-            <div class="no-jd-icon">🎯</div>
+            <div class="no-jd-icon-box">
+                <svg class="icon-svg icon-md" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="6"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                </svg>
+            </div>
             <p class="no-jd-text">You evaluated your resume as a standalone document. Paste a job description to unlock targeted skill gap analysis and keyword matching.</p>
-            <button class="btn btn-sm btn-outline switch-tab-btn" data-target="jobmatch-tab">+ Optimize for a Job</button>
+            <button type="button" class="btn btn-sm btn-outline switch-tab-btn" data-target="jobmatch-tab">
+                <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Optimize for a Job</span>
+            </button>
         </div>
         {% endif %}
     </div>
@@ -179,20 +273,75 @@
             </div>
             {% endfor %}
         </div>
-        <button class="btn btn-primary btn-sm switch-tab-btn" data-target="recommendations-tab">View Actionable Recommendations</button>
+        <button type="button" class="btn btn-primary btn-sm switch-tab-btn" data-target="recommendations-tab">
+            <span>View Actionable Recommendations</span>
+        </button>
     </div>
 </div>
 
 <!-- Tab Navigation Bar -->
 <div class="dashboard-tabs">
-    <button class="tab-btn active" data-tab="overview-tab">📋 Overview</button>
-    <button class="tab-btn" data-tab="ats-tab">🛡️ ATS Readiness ({{ analysis.ats_readiness.score|round|int }}%)</button>
-    <button class="tab-btn" data-tab="skills-tab">💡 Skills &amp; Keywords ({{ analysis.skills_analysis.total_detected }})</button>
-    <button class="tab-btn" data-tab="experience-tab">💼 Experience &amp; Bullets</button>
-    <button class="tab-btn" data-tab="sections-tab">📑 Resume Sections</button>
-    <button class="tab-btn" data-tab="jobmatch-tab">🎯 Job Match {% if analysis.job_match.is_available %}({{ analysis.job_match.match_score|round|int }}%){% endif %}</button>
-    <button class="tab-btn" data-tab="recommendations-tab">🚀 Recommendations ({{ analysis.recommendations|length }})</button>
-    <button class="tab-btn" data-tab="preview-tab">📄 Resume Preview</button>
+    <button type="button" class="tab-btn active" data-tab="overview-tab">
+        <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span>Overview</span>
+    </button>
+    <button type="button" class="tab-btn" data-tab="ats-tab">
+        <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <polyline points="9 12 11 14 15 10"></polyline>
+        </svg>
+        <span>ATS Readiness ({{ analysis.ats_readiness.score|round|int }}%)</span>
+    </button>
+    <button type="button" class="tab-btn" data-tab="skills-tab">
+        <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+        <span>Skills &amp; Keywords ({{ analysis.skills_analysis.total_detected }})</span>
+    </button>
+    <button type="button" class="tab-btn" data-tab="experience-tab">
+        <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+            <rect width="20" height="14" x="2" y="7" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+        </svg>
+        <span>Experience &amp; Bullets</span>
+    </button>
+    <button type="button" class="tab-btn" data-tab="sections-tab">
+        <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span>Resume Sections</span>
+    </button>
+    <button type="button" class="tab-btn" data-tab="jobmatch-tab">
+        <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="6"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+        </svg>
+        <span>Job Match {% if analysis.job_match.is_available %}({{ analysis.job_match.match_score|round|int }}%){% endif %}</span>
+    </button>
+    <button type="button" class="tab-btn" data-tab="recommendations-tab">
+        <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span>Recommendations ({{ analysis.recommendations|length }})</span>
+    </button>
+    <button type="button" class="tab-btn" data-tab="preview-tab">
+        <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <span>Resume Preview</span>
+    </button>
 </div>
 
 <!-- TAB 1: OVERVIEW -->
@@ -206,22 +355,31 @@
                 </div>
                 <p class="overview-lead">{{ analysis.health_score.explanation }}</p>
                 
-                <h4 class="mt-4">Detected Profile Highlights</h4>
+                <h4 style="margin-top: 1.5rem;">Detected Profile Highlights</h4>
                 <ul class="highlight-bullet-list">
                     <li><strong>Total Career Experience:</strong> {{ analysis.total_experience_display }} across {{ analysis.experience_analysis.total_roles }} role(s).</li>
-                    <li><strong>Verified Skills:</strong> {{ analysis.skills_analysis.total_detected }} recognized technical/functional skills, with {{ analysis.skills_analysis.evidenced_skills|length }} verified in experience context.</li>
+                    <li><strong>Demonstrated Skills:</strong> {{ analysis.skills_analysis.total_detected }} recognized technical/functional skills, with {{ analysis.skills_analysis.evidenced_skills|length }} evidenced in experience context.</li>
                     <li><strong>Quantifiable Impact:</strong> {{ analysis.experience_analysis.measurable_achievement_count }} measurable achievement metrics identified.</li>
                     <li><strong>ATS Compatibility:</strong> {{ analysis.ats_readiness.passed_count }} of {{ analysis.ats_readiness.checks|length }} audit checks passed.</li>
                 </ul>
 
                 {% if analysis.warnings %}
-                <div class="warnings-box mt-4">
-                    <h4>⚠️ Evidence-Based Observations</h4>
-                    <ul class="warnings-list">
-                        {% for warn in analysis.warnings %}
-                        <li>{{ warn }}</li>
-                        {% endfor %}
-                    </ul>
+                <div class="alert alert-warning" style="margin-top: 1.5rem;">
+                    <span class="alert-icon">
+                        <svg class="icon-svg icon-sm" viewBox="0 0 24 24">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    </span>
+                    <div class="alert-text">
+                        <h4 style="font-size: 0.9375rem; margin-bottom: 4px; color: var(--warning-text);">Evidence-Based Observations</h4>
+                        <ul style="margin-left: 1.25rem; font-size: 0.8125rem;">
+                            {% for warn in analysis.warnings %}
+                            <li>{{ warn }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 </div>
                 {% endif %}
             </div>
@@ -247,9 +405,15 @@
                             {% endif %}
                         </div>
                         {% if sec.strengths %}
-                        <p class="sec-quick-note text-success">✓ {{ sec.strengths[0] }}</p>
+                        <p class="sec-quick-note text-success">
+                            <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <span>{{ sec.strengths[0] }}</span>
+                        </p>
                         {% elif sec.weaknesses %}
-                        <p class="sec-quick-note text-warning">⚠ {{ sec.weaknesses[0] }}</p>
+                        <p class="sec-quick-note text-warning">
+                            <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path></svg>
+                            <span>{{ sec.weaknesses[0] }}</span>
+                        </p>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -262,10 +426,10 @@
 <!-- TAB 2: ATS READINESS -->
 <div id="ats-tab" class="tab-pane">
     <div class="card content-card">
-        <div class="card-header d-flex justify-between align-center">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div>
                 <h3>ATS Readiness Analysis</h3>
-                <p class="section-desc">Evaluates your resume structure against industry-standard Applicant Tracking System parsing behaviors. <em>(Note: Commercial ATS engines vary; this assessment ensures maximum compatibility across platforms.)</em></p>
+                <p class="section-desc">Evaluates your resume structure against industry-standard Applicant Tracking System parsing behaviors. <em>(Commercial ATS engines vary; this assessment ensures maximum compatibility across platforms.)</em></p>
             </div>
             <div class="ats-badge-large">
                 <span class="ats-big-score">{{ analysis.ats_readiness.score|round|int }}%</span>
@@ -273,23 +437,37 @@
             </div>
         </div>
 
-        <div class="ats-checks-list mt-4">
+        <div class="ats-checks-list" style="margin-top: 1.5rem;">
             {% for check in analysis.ats_readiness.checks %}
             <div class="ats-check-card check-{{ check.status.value.lower() }}">
                 <div class="check-status-badge">
                     {% if check.status.value == 'PASSED' %}
-                    <span class="badge badge-success">✓ PASSED</span>
+                    <span class="badge badge-success">
+                        <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <span>PASSED</span>
+                    </span>
                     {% elif check.status.value == 'WARNING' %}
-                    <span class="badge badge-warning">⚠ WARNING</span>
+                    <span class="badge badge-warning">
+                        <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path></svg>
+                        <span>WARNING</span>
+                    </span>
                     {% else %}
-                    <span class="badge badge-danger">✕ ACTION REQUIRED</span>
+                    <span class="badge badge-danger">
+                        <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        <span>ACTION REQUIRED</span>
+                    </span>
                     {% endif %}
                 </div>
                 <div class="check-body">
                     <h4 class="check-name">{{ check.title }}</h4>
                     <p class="check-observation">{{ check.message }}</p>
                     <div class="check-fix-tip">
-                        <strong>💡 How to optimize:</strong> {{ check.fix_tip }}
+                        <svg class="icon-svg icon-xs text-primary" viewBox="0 0 24 24">
+                            <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
+                            <path d="M9 18h6"></path>
+                            <path d="M10 22h4"></path>
+                        </svg>
+                        <span><strong>How to optimize:</strong> {{ check.fix_tip }}</span>
                     </div>
                 </div>
             </div>
@@ -328,7 +506,7 @@
             </div>
         </div>
 
-        <div class="skills-category-grid mt-4">
+        <div class="skills-category-grid" style="margin-top: 1.5rem;">
             {% for cat in analysis.skills_analysis.categories %}
             <div class="category-skill-card">
                 <h4 class="cat-title">{{ cat.category_name }}</h4>
@@ -336,7 +514,10 @@
                     {% for skill in cat.skills %}
                     {% set is_evidenced = skill in analysis.skills_analysis.evidenced_skills %}
                     <span class="chip {% if is_evidenced %}chip-evidenced{% else %}chip-claimed{% endif %}" title="{% if is_evidenced %}Demonstrated in work experience or projects{% else %}Listed in skills section only{% endif %}">
-                        {{ skill }} {% if is_evidenced %}✓{% endif %}
+                        {{ skill }}
+                        {% if is_evidenced %}
+                            <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        {% endif %}
                     </span>
                     {% endfor %}
                 </div>
@@ -345,9 +526,9 @@
         </div>
 
         {% if analysis.skills_analysis.recommendations %}
-        <div class="skill-recommendations mt-4">
-            <h4>Skill Section Recommendations</h4>
-            <ul>
+        <div class="skill-recommendations" style="margin-top: 1.5rem; background: var(--bg-subtle); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border);">
+            <h4 style="font-size: 0.9375rem; margin-bottom: 8px;">Skill Section Recommendations</h4>
+            <ul class="clean-list">
                 {% for r in analysis.skills_analysis.recommendations %}
                 <li>{{ r }}</li>
                 {% endfor %}
@@ -360,7 +541,7 @@
 <!-- TAB 4: EXPERIENCE & BULLETS -->
 <div id="experience-tab" class="tab-pane">
     <div class="card content-card">
-        <div class="card-header d-flex justify-between align-center">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div>
                 <h3>Experience &amp; Bullet Quality Analysis</h3>
                 <p class="section-desc">
@@ -389,8 +570,8 @@
             </div>
         </div>
 
-        <div class="bullets-detail-list mt-4">
-            <h4>Bullet-by-Bullet Impact Audit</h4>
+        <div class="bullets-detail-list" style="margin-top: 1.5rem;">
+            <h4 style="margin-bottom: 0.75rem;">Bullet-by-Bullet Impact Audit</h4>
             {% for bullet in analysis.experience_analysis.bullets %}
             <div class="bullet-audit-item {% if bullet.is_weak %}item-weak{% elif bullet.has_metrics %}item-strong{% else %}item-moderate{% endif %}">
                 <div class="bullet-top-row">
@@ -402,12 +583,22 @@
                 <p class="bullet-raw-text">"{{ bullet.raw_text }}"</p>
                 {% if bullet.suggestion %}
                 <div class="bullet-advice">
-                    <span class="advice-label">💡 Coaching Advice:</span> {{ bullet.suggestion }}
+                    <svg class="icon-svg icon-xs text-primary" viewBox="0 0 24 24" style="margin-right: 4px;">
+                        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
+                        <path d="M9 18h6"></path>
+                        <path d="M10 22h4"></path>
+                    </svg>
+                    <strong>Coaching Advice:</strong> {{ bullet.suggestion }}
                 </div>
                 {% endif %}
                 {% if bullet.example %}
                 <div class="bullet-example-box">
-                    <span class="example-label">✨ Example Rewrite (labeled for illustration):</span>
+                    <span class="example-label">
+                        <svg class="icon-svg icon-xs" viewBox="0 0 24 24" style="margin-right: 2px;">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                        Example Rewrite (labeled for illustration):
+                    </span>
                     <p class="example-text">{{ bullet.example }}</p>
                 </div>
                 {% endif %}
@@ -425,10 +616,10 @@
             <p class="section-desc">Independent evaluation of each major resume section with strengths, weaknesses, and direct improvement advice.</p>
         </div>
 
-        <div class="sections-full-list mt-4">
+        <div class="sections-full-list" style="margin-top: 1.5rem;">
             {% for key, sec in analysis.sections.items() %}
             <div class="section-detail-card card">
-                <div class="sec-detail-header d-flex justify-between align-center">
+                <div class="sec-detail-header" style="display: flex; justify-content: space-between; align-items: center;">
                     <h4>{{ sec.display_name }}</h4>
                     {% if sec.detected and sec.score is not none %}
                     <span class="badge {% if sec.score >= 80 %}badge-success{% elif sec.score >= 65 %}badge-warning{% else %}badge-danger{% endif %}">
@@ -439,9 +630,12 @@
                     {% endif %}
                 </div>
 
-                <div class="sec-feedback-grid mt-3">
+                <div class="sec-feedback-grid" style="margin-top: 1rem;">
                     <div class="sec-col">
-                        <strong class="col-title text-success">✓ What is working well</strong>
+                        <strong class="col-title text-success">
+                            <svg class="icon-svg icon-xs" viewBox="0 0 24 24" style="margin-right: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            What is working well
+                        </strong>
                         {% if sec.strengths %}
                         <ul class="clean-list">
                             {% for s in sec.strengths %}
@@ -453,7 +647,10 @@
                         {% endif %}
                     </div>
                     <div class="sec-col">
-                        <strong class="col-title text-warning">⚠ What could be improved</strong>
+                        <strong class="col-title text-warning">
+                            <svg class="icon-svg icon-xs" viewBox="0 0 24 24" style="margin-right: 2px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path></svg>
+                            What could be improved
+                        </strong>
                         {% if sec.weaknesses %}
                         <ul class="clean-list">
                             {% for w in sec.weaknesses %}
@@ -467,7 +664,7 @@
                 </div>
 
                 {% if sec.recommendation %}
-                <div class="sec-recommendation-box mt-3">
+                <div class="sec-recommendation-box" style="margin-top: 1rem;">
                     <strong>Suggested Action:</strong> {{ sec.recommendation }}
                 </div>
                 {% endif %}
@@ -511,17 +708,20 @@
         </div>
 
         <!-- Required Skills Comparison -->
-        <div class="match-category-box mt-4">
+        <div class="match-category-box" style="margin-top: 1.5rem;">
             <h4>Required Skills Analysis</h4>
             <div class="match-skills-grid">
                 <div class="match-col">
                     <h5 class="text-success">Matched Required Skills ({{ analysis.job_match.required_skills_matched|length }})</h5>
                     <div class="chips-container">
                         {% for s in analysis.job_match.required_skills_matched %}
-                        <span class="chip chip-success">✓ {{ s }}</span>
+                        <span class="chip chip-success">
+                            <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <span>{{ s }}</span>
+                        </span>
                         {% endfor %}
                         {% if not analysis.job_match.required_skills_matched %}
-                        <span class="empty-text">None matched</span>
+                        <span class="empty-note">None matched</span>
                         {% endif %}
                     </div>
                 </div>
@@ -529,10 +729,13 @@
                     <h5 class="text-danger">Missing Required Skills ({{ analysis.job_match.required_skills_missing|length }})</h5>
                     <div class="chips-container">
                         {% for s in analysis.job_match.required_skills_missing %}
-                        <span class="chip chip-danger">✕ {{ s }}</span>
+                        <span class="chip chip-danger">
+                            <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            <span>{{ s }}</span>
+                        </span>
                         {% endfor %}
                         {% if not analysis.job_match.required_skills_missing %}
-                        <span class="text-success font-medium">All core requirements satisfied!</span>
+                        <span class="text-success" style="font-size: 0.8125rem; font-weight: 600;">All core requirements satisfied!</span>
                         {% endif %}
                     </div>
                 </div>
@@ -540,15 +743,21 @@
         </div>
 
         <!-- Preferred Skills Comparison -->
-        <div class="match-category-box mt-4">
+        <div class="match-category-box" style="margin-top: 1.5rem;">
             <h4>Preferred &amp; Bonus Skills Analysis</h4>
             <div class="match-skills-grid">
                 <div class="match-col">
                     <h5 class="text-info">Matched Preferred ({{ analysis.job_match.preferred_skills_matched|length }})</h5>
                     <div class="chips-container">
                         {% for s in analysis.job_match.preferred_skills_matched %}
-                        <span class="chip chip-info">✓ {{ s }}</span>
+                        <span class="chip chip-info">
+                            <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <span>{{ s }}</span>
+                        </span>
                         {% endfor %}
+                        {% if not analysis.job_match.preferred_skills_matched %}
+                        <span class="empty-note">None matched</span>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="match-col">
@@ -557,13 +766,16 @@
                         {% for s in analysis.job_match.preferred_skills_missing %}
                         <span class="chip chip-neutral">{{ s }}</span>
                         {% endfor %}
+                        {% if not analysis.job_match.preferred_skills_missing %}
+                        <span class="empty-note">None missing</span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Keyword Context & Recommendations -->
-        <div class="keywords-table-box mt-4">
+        <div class="keywords-table-box" style="margin-top: 1.5rem;">
             <h4>Requirement Keyword Audit</h4>
             <p class="table-subnote">Always add keywords only when you possess authentic, demonstrable competence.</p>
             <table class="data-table">
@@ -582,9 +794,15 @@
                         <td><span class="badge {% if kw.importance == 'Required' %}badge-danger{% else %}badge-neutral{% endif %}">{{ kw.importance }}</span></td>
                         <td>
                             {% if kw.detected %}
-                            <span class="badge badge-success">✓ Yes {% if kw.evidence_section %}({{ kw.evidence_section }}){% endif %}</span>
+                            <span class="badge badge-success">
+                                <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Yes {% if kw.evidence_section %}({{ kw.evidence_section }}){% endif %}</span>
+                            </span>
                             {% else %}
-                            <span class="badge badge-danger">✕ No</span>
+                            <span class="badge badge-danger">
+                                <svg class="icon-svg icon-xs" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                <span>No</span>
+                            </span>
                             {% endif %}
                         </td>
                         <td><small>{{ kw.context_tip }}</small></td>
@@ -595,12 +813,12 @@
         </div>
         {% else %}
         <!-- No JD Available Form -->
-        <div class="no-jd-form-wrapper">
-            <div class="no-jd-callout">
+        <div class="no-jd-form-wrapper" style="padding: 24px; background: var(--bg-subtle); border-radius: var(--radius-md); margin-top: 1rem;">
+            <div class="no-jd-callout" style="margin-bottom: 1.5rem;">
                 <h4>Paste a Job Description to Unlock Match Scores</h4>
-                <p>Compare your resume against any job posting to see missing skills, keyword gaps, and tailored suggestions.</p>
+                <p class="section-desc">Compare your resume against any job posting to see missing skills, keyword gaps, and tailored suggestions.</p>
             </div>
-            <form action="{{ url_for('main.analyze') }}" method="POST" enctype="multipart/form-data" class="mt-4">
+            <form action="{{ url_for('main.analyze') }}" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="new_jd_text" class="section-label">Target Job Description:</label>
                     <textarea id="new_jd_text" name="job_description" rows="7" class="form-control" placeholder="Paste job posting text here..." required></textarea>
@@ -609,7 +827,14 @@
                     <label class="section-label">Re-upload Resume (PDF):</label>
                     <input type="file" name="resume" accept=".pdf" class="form-control" required>
                 </div>
-                <button type="submit" class="btn btn-primary">Compare Resume Against Job Posting</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg class="icon-svg icon-sm" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
+                    <span>Compare Resume Against Job Posting</span>
+                </button>
             </form>
         </div>
         {% endif %}
@@ -619,20 +844,20 @@
 <!-- TAB 7: RECOMMENDATIONS -->
 <div id="recommendations-tab" class="tab-pane">
     <div class="card content-card">
-        <div class="card-header d-flex justify-between align-center">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div>
-                <h3>Personalized Resume Improvement Plan</h3>
+                <h3>Actionable Recommendations &amp; Improvement Plan</h3>
                 <p class="section-desc">Prioritized action items to make your resume more impactful to human recruiters and robust across ATS screeners.</p>
             </div>
             <div class="priority-filter-buttons">
-                <button class="filter-pill active" data-filter="all">All ({{ analysis.recommendations|length }})</button>
-                <button class="filter-pill" data-filter="HIGH">High Priority</button>
-                <button class="filter-pill" data-filter="MEDIUM">Medium Priority</button>
-                <button class="filter-pill" data-filter="LOW">Low Priority</button>
+                <button type="button" class="filter-pill active" data-filter="all">All ({{ analysis.recommendations|length }})</button>
+                <button type="button" class="filter-pill" data-filter="HIGH">High Priority</button>
+                <button type="button" class="filter-pill" data-filter="MEDIUM">Medium Priority</button>
+                <button type="button" class="filter-pill" data-filter="LOW">Low Priority</button>
             </div>
         </div>
 
-        <div class="recommendations-list mt-4">
+        <div class="recommendations-list" style="margin-top: 1.5rem;">
             {% for rec in analysis.recommendations %}
             <div class="recommendation-card priority-{{ rec.priority.value.lower() }}" data-priority="{{ rec.priority.value }}">
                 <div class="rec-header">
