@@ -1,9 +1,9 @@
-"""Flask routes and UI view handlers for AI-Powered Resume Ranker."""
+"""Flask routes and UI view handlers for AI-Powered Resume Analyzer."""
 
 import csv
+from pathlib import Path
 import re
 import time
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 import uuid
 
@@ -20,6 +20,7 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
+from resume_ranker.analyzer.resume_analyzer import CandidateResumeAnalyzer
 from resume_ranker.extraction import extract_document, extract_text_from_pdf
 from resume_ranker.models.job_description import (
     ImportanceLevel,
@@ -35,14 +36,16 @@ from resume_ranker.nlp import (
     TextPreprocessor,
 )
 from resume_ranker.ranking.ranker import CandidateRanker
+from resume_ranker.reporting.candidate_report import CandidateReportGenerator
 from resume_ranker.reporting.report_generator import HRReportGenerator
 from resume_ranker.scoring.scorer import CandidateScorer
 from resume_ranker.vectorization.tfidf_matcher import TFIDFMatcher
 
 main_bp = Blueprint("main", __name__)
 
-# Server-side in-memory results store for small application demo
+# Server-side in-memory results store
 _results_store: Dict[str, Any] = {}
+_candidate_store: Dict[str, Any] = {}
 
 
 def _build_confirmed_jd(
@@ -140,21 +143,125 @@ def _build_confirmed_jd(
 
 
 def _generate_csv_report(ranked_candidates: List[Dict[str, Any]], report_path: Path) -> None:
-    """Write ranked candidate data to an audit-ready CSV report using HRReportGenerator.
-
-    Args:
-        ranked_candidates: Ordered list of candidate scoring dictionaries.
-        report_path: Target output file path.
-    """
+    """Write ranked candidate data to an audit-ready CSV report using HRReportGenerator."""
     generator = HRReportGenerator(output_dir=report_path.parent)
     generator.generate_csv_report(ranked_candidates, filename=report_path.name)
 
 
+# ---------------------------------------------------------------------------
+# Candidate-Facing Core Routes
+# ---------------------------------------------------------------------------
+
 @main_bp.route("/", methods=["GET"])
 def index():
-    """Render landing page with resume upload form and job description input."""
+    """Render candidate landing page with resume upload form and optional job description."""
     return render_template("index.html")
 
+
+@main_bp.route("/analyze", methods=["POST"])
+def analyze():
+    """Execute candidate resume analysis with optional job description."""
+    # Support both 'resume' and 'resumes' field name
+    files = request.files.getlist("resume") or request.files.getlist("resumes")
+    valid_files = [f for f in files if f and f.filename and f.filename.strip()]
+
+    if not valid_files:
+        flash("Please select a PDF resume to analyze.", "danger")
+        return redirect(url_for("main.index"))
+
+    file = valid_files[0]
+    filename = secure_filename(file.filename)
+    allowed_exts = current_app.config.get("ALLOWED_EXTENSIONS", {"pdf"})
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+
+    if ext not in allowed_exts:
+        flash(f"Invalid file type '{file.filename}'. Only PDF resumes are accepted.", "danger")
+        return redirect(url_for("main.index"))
+
+    upload_dir = Path(current_app.config["UPLOAD_FOLDER"])
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    safe_stored_name = f"{uuid.uuid4().hex[:8]}_{filename}"
+    dest_path = upload_dir / safe_stored_name
+    file.save(str(dest_path))
+
+    job_description = request.form.get("job_description", "").strip() or None
+
+    try:
+        extracted_doc = extract_document(dest_path)
+        resume_parser = ResumeParser()
+        parsed_resume = resume_parser.parse_document(extracted_doc, filename=filename)
+
+        analyzer = CandidateResumeAnalyzer()
+        analysis = analyzer.analyze(
+            parsed_resume=parsed_resume,
+            quality_report=extracted_doc.quality,
+            job_description=job_description,
+        )
+
+        report_dir = Path(current_app.config["REPORT_FOLDER"])
+        report_dir.mkdir(parents=True, exist_ok=True)
+        report_filename = f"resume_analysis_{int(time.time())}_{uuid.uuid4().hex[:4]}.csv"
+        csv_generator = CandidateReportGenerator(output_dir=report_dir)
+        csv_generator.generate_candidate_csv(analysis, filename=report_filename)
+
+        _candidate_store["latest"] = {
+            "analysis": analysis,
+            "report_filename": report_filename,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        flash("Resume analysis complete! Explore your personalized recommendations below.", "success")
+        return redirect(url_for("main.dashboard"))
+
+    except Exception as e:
+        flash(f"An error occurred while analyzing the resume: {str(e)}", "danger")
+        return redirect(url_for("main.index"))
+
+
+@main_bp.route("/dashboard", methods=["GET"])
+def dashboard():
+    """Render the candidate resume analysis and career optimization dashboard."""
+    latest_data = _candidate_store.get("latest")
+    if not latest_data or not latest_data.get("analysis"):
+        return render_template("dashboard.html", analysis=None)
+
+    return render_template(
+        "dashboard.html",
+        analysis=latest_data["analysis"],
+        report_filename=latest_data.get("report_filename"),
+        timestamp=latest_data.get("timestamp"),
+    )
+
+
+@main_bp.route("/download-analysis/<filename>", methods=["GET"])
+def download_analysis(filename: str):
+    """Safely serve the generated candidate analysis CSV file.
+
+    Args:
+        filename: Name of the analysis CSV report file.
+
+    Returns:
+        CSV file attachment download response.
+    """
+    if not filename or ".." in filename or "/" in filename or "\\" in filename:
+        abort(404)
+
+    safe_name = secure_filename(filename)
+    if not safe_name or not safe_name.lower().endswith(".csv"):
+        abort(404)
+
+    report_dir = Path(current_app.config["REPORT_FOLDER"]).resolve()
+    target_file = (report_dir / safe_name).resolve()
+
+    if not target_file.is_file() or not target_file.is_relative_to(report_dir):
+        abort(404)
+
+    return send_from_directory(str(report_dir), safe_name, as_attachment=True, mimetype="text/csv")
+
+
+# ---------------------------------------------------------------------------
+# Legacy & Multi-Resume Screening Compatibility Routes
+# ---------------------------------------------------------------------------
 
 @main_bp.route("/review_jd", methods=["POST"])
 def review_jd():
@@ -164,7 +271,6 @@ def review_jd():
         flash("Job description is required.", "danger")
         return redirect(url_for("main.index"))
 
-    # Stage any files uploaded on index page
     staged_files = []
     files = request.files.getlist("resumes")
     valid_files = [f for f in files if f and f.filename and f.filename.strip()]
@@ -212,17 +318,20 @@ def review_jd():
 @main_bp.route("/upload", methods=["POST"])
 def upload_resumes():
     """Handle resume and job description upload and execute full screening pipeline."""
-    job_description = request.form.get("job_description", "").strip()
-    if not job_description:
+    # If legacy endpoint called with explicit empty string in job_description without candidate mode
+    raw_jd = request.form.get("job_description")
+    if raw_jd is not None and not raw_jd.strip() and request.form.get("candidate_mode") != "1":
         flash("Job description is required.", "danger")
         return redirect(url_for("main.index"))
+
+    job_description = (raw_jd or "").strip()
 
     upload_dir = Path(current_app.config["UPLOAD_FOLDER"])
     upload_dir.mkdir(parents=True, exist_ok=True)
     allowed_exts = current_app.config.get("ALLOWED_EXTENSIONS", {"pdf"})
     saved_candidates = []
 
-    # Check for staged files from recruiter review step
+    # Check for staged files
     staged_origs = request.form.getlist("staged_filename")
     staged_storeds = request.form.getlist("staged_stored_name")
     for orig, stored in zip(staged_origs, staged_storeds):
@@ -231,7 +340,7 @@ def upload_resumes():
             saved_candidates.append((orig, dest_path))
 
     # Also process newly uploaded files
-    files = request.files.getlist("resumes")
+    files = request.files.getlist("resumes") or request.files.getlist("resume")
     valid_files = [f for f in files if f and f.filename and f.filename.strip()]
     for file in valid_files:
         filename = secure_filename(file.filename)
@@ -240,7 +349,6 @@ def upload_resumes():
             flash(f"Invalid file type '{file.filename}'. Only PDF resumes are accepted.", "danger")
             return redirect(url_for("main.index"))
 
-        # Save with unique prefix to avoid naming collisions
         safe_stored_name = f"{uuid.uuid4().hex[:8]}_{filename}"
         dest_path = upload_dir / safe_stored_name
         file.save(str(dest_path))
@@ -251,7 +359,31 @@ def upload_resumes():
         return redirect(url_for("main.index"))
 
     try:
-        # Step 1: Parse or build Job Description
+        # If single resume uploaded in candidate mode or without JD, forward to candidate analysis
+        if len(saved_candidates) == 1 and request.form.get("candidate_mode") == "1":
+            display_name, file_path = saved_candidates[0]
+            extracted_doc = extract_document(file_path)
+            resume_parser = ResumeParser()
+            parsed_resume = resume_parser.parse_document(extracted_doc, filename=display_name)
+            analyzer = CandidateResumeAnalyzer()
+            analysis = analyzer.analyze(
+                parsed_resume=parsed_resume,
+                quality_report=extracted_doc.quality,
+                job_description=job_description or None,
+            )
+            report_dir = Path(current_app.config["REPORT_FOLDER"])
+            report_dir.mkdir(parents=True, exist_ok=True)
+            report_filename = f"resume_analysis_{int(time.time())}_{uuid.uuid4().hex[:4]}.csv"
+            csv_gen = CandidateReportGenerator(output_dir=report_dir)
+            csv_gen.generate_candidate_csv(analysis, filename=report_filename)
+            _candidate_store["latest"] = {
+                "analysis": analysis,
+                "report_filename": report_filename,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            return redirect(url_for("main.dashboard"))
+
+        # Otherwise execute screening workflow
         is_confirmed = request.form.get("confirmed") == "1"
         if is_confirmed:
             req_skills = request.form.getlist("required_skills")
@@ -274,7 +406,6 @@ def upload_resumes():
             jd_parser = JDParser()
             parsed_jd = jd_parser.parse_job_description(job_description)
 
-        # Step 2: Extract PDF documents with structural blocks & quality assessment
         resume_parser = ResumeParser()
         raw_resumes: Dict[str, str] = {}
         parsed_resumes = {}
@@ -294,7 +425,6 @@ def upload_resumes():
             parsed_resumes[display_name] = parsed_res
             quality_reports[display_name] = extracted_doc.quality
 
-        # Step 3: NLP Preprocessing for TF-IDF Lexical Similarity
         model_name = current_app.config.get("SPACY_MODEL", "en_core_web_sm")
         preprocessor = TextPreprocessor(model_name=model_name)
         proc_job = preprocessor.preprocess(job_description)
@@ -303,7 +433,6 @@ def upload_resumes():
         matcher = TFIDFMatcher()
         sim_scores = matcher.compute_batch_similarity(proc_resumes, proc_job)
 
-        # Step 4: Requirement-level Matching, Temporal Reasoning, and Scoring
         scorer = CandidateScorer()
         scored_candidates = []
 
@@ -317,18 +446,15 @@ def upload_resumes():
             scored_dict = scored_profile.model_dump()
             scored_candidates.append(scored_dict)
 
-        # Step 5: Ranking
         ranker = CandidateRanker()
         ranked = ranker.rank_candidates(scored_candidates)
 
-        # Step 6: Generate CSV Report
         report_dir = Path(current_app.config["REPORT_FOLDER"])
         report_dir.mkdir(parents=True, exist_ok=True)
         report_filename = f"hr_candidate_report_{int(time.time())}_{uuid.uuid4().hex[:4]}.csv"
         report_path = report_dir / report_filename
         _generate_csv_report(ranked, report_path)
 
-        # Step 7: Store Latest Results
         report_generator = HRReportGenerator(output_dir=report_dir)
         summary_stats = report_generator.generate_summary(ranked) if ranked else {}
 
@@ -342,7 +468,24 @@ def upload_resumes():
             "summary_metrics": summary_stats,
         }
 
-        flash(f"Successfully screened and ranked {len(ranked)} candidates!", "success")
+        # Also store first candidate into candidate_store for dashboard preview
+        if parsed_resumes:
+            first_name = list(parsed_resumes.keys())[0]
+            first_res = parsed_resumes[first_name]
+            first_qual = quality_reports.get(first_name)
+            c_analyzer = CandidateResumeAnalyzer()
+            c_analysis = c_analyzer.analyze(
+                parsed_resume=first_res,
+                quality_report=first_qual,
+                job_description=job_description,
+            )
+            _candidate_store["latest"] = {
+                "analysis": c_analysis,
+                "report_filename": report_filename,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+
+        flash(f"Successfully processed {len(ranked)} candidate resume(s)!", "success")
         return redirect(url_for("main.results"))
 
     except Exception as e:
@@ -352,7 +495,7 @@ def upload_resumes():
 
 @main_bp.route("/results", methods=["GET"])
 def results():
-    """Display candidate rankings, scores, and matched attributes."""
+    """Display candidate rankings and link to individual analysis dashboards."""
     latest_data = _results_store.get("latest")
     if not latest_data or not latest_data.get("candidates"):
         return render_template("results.html", candidates=None)
@@ -371,7 +514,7 @@ def results():
 
 @main_bp.route("/download-report/<filename>", methods=["GET"])
 def download_report(filename: str):
-    """Safely serve the generated HR report preventing path traversal.
+    """Safely serve the generated CSV report preventing path traversal.
 
     Args:
         filename: Name of the report CSV file to download.
