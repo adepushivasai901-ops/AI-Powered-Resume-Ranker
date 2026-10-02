@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Upload & Analyze Your Resume — AI-Powered Resume Analyzer{% endblock %}
+{% block title %}Upload & Analyze Your Resume — ResumeAI{% endblock %}
 
 {% block content %}
 <div class="landing-hero">
-    <div class="hero-badge">AI Career Coach &amp; ATS Optimizer</div>
+    <div class="hero-badge">
+        <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
+        </svg>
+        <span>AI Career Coach &amp; ATS Optimizer</span>
+    </div>
     <h1 class="hero-title">Optimize Your Resume for More Interviews</h1>
     <p class="hero-subtitle">
         Analyze your resume, identify weaknesses, improve ATS compatibility, and get actionable, evidence-based recommendations tailored to your career goals.
@@ -13,16 +18,24 @@
 
 <section class="card upload-card candidate-upload-card">
     <form id="analyzeForm" action="{{ url_for('main.analyze') }}" method="POST" enctype="multipart/form-data" class="upload-form">
-        <!-- Resume Upload Zone -->
+        <!-- Step 1: Resume Upload Zone -->
         <div class="form-group">
             <div class="label-row">
-                <label for="resumeInput" class="section-label">Upload Your Resume (PDF only)</label>
-                <span class="badge badge-primary">Step 1</span>
+                <div class="step-indicator">
+                    <span class="badge badge-primary">Step 1</span>
+                    <label for="resumeInput" class="section-label">Upload Your Resume (PDF only)</label>
+                </div>
             </div>
             
             <div class="file-drop-area" id="fileDropArea">
                 <div class="file-drop-content">
-                    <span class="file-icon-large">📄</span>
+                    <div class="drop-icon-box">
+                        <svg class="icon-svg" viewBox="0 0 24 24">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
                     <h3 class="file-prompt-title">Drag &amp; drop your resume here, or <span class="browse-link">browse files</span></h3>
                     <p class="file-prompt-desc">Accepted format: <strong>PDF</strong> (Max file size: 16 MB). Vector PDFs exported from Word, Google Docs, or LaTeX are recommended.</p>
                 </div>
@@ -38,20 +51,33 @@
                         <span id="selectedFileName" class="file-name">resume.pdf</span>
                         <span id="selectedFileSize" class="file-size">1.2 MB</span>
                     </div>
-                    <button type="button" id="removeFileBtn" class="btn-icon" title="Remove file">✕</button>
+                    <button type="button" id="removeFileBtn" class="btn-icon" title="Remove file">
+                        <svg class="icon-svg icon-sm" viewBox="0 0 24 24">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Optional Job Description Section -->
+        <!-- Step 2: Optional Job Description Section -->
         <div class="form-group jd-accordion">
             <div class="label-row jd-toggle-row" id="jdToggleHeader">
-                <div class="jd-toggle-left">
-                    <label for="job_description" class="section-label">Paste a Job Description (Optional)</label>
+                <div class="step-indicator">
                     <span class="badge badge-light">Step 2 (Optional)</span>
+                    <label for="job_description" class="section-label">Paste a Job Description</label>
                 </div>
                 <div class="jd-actions">
-                    <button type="button" id="loadSampleJdBtn" class="btn-text">Load Sample Job Description</button>
+                    <button type="button" id="loadSampleJdBtn" class="btn-text">
+                        <svg class="icon-svg icon-xs" viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
+                        <span>Load Sample Job Description</span>
+                    </button>
                 </div>
             </div>
             <p class="section-desc jd-explainer">
@@ -61,7 +87,7 @@
                 id="job_description"
                 name="job_description"
                 rows="6"
-                class="form-control code-text"
+                class="form-control"
                 placeholder="Paste the target job description or requirements here (e.g. Senior Python Developer with FastAPI, PostgreSQL, AWS, and Docker)..."
             ></textarea>
         </div>
@@ -69,14 +95,25 @@
         <!-- Submission and CTAs -->
         <div class="form-actions upload-actions">
             <button type="submit" id="submitBtn" class="btn btn-primary btn-large">
-                <span class="btn-text-content">🚀 Analyze Resume Now</span>
+                <span class="btn-text-content">
+                    <svg class="icon-svg icon-sm" viewBox="0 0 24 24">
+                        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
+                    </svg>
+                    <span>Analyze Resume</span>
+                </span>
                 <span class="btn-spinner" style="display: none;">
                     <span class="spinner-circle"></span> Evaluating ATS, Skills &amp; Impact...
                 </span>
             </button>
             
             <button type="submit" formaction="{{ url_for('main.upload_resumes') }}" class="btn btn-outline" title="Screen multiple candidates against a JD">
-                Recruiter Screening Mode
+                <svg class="icon-svg icon-sm" viewBox="0 0 24 24">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <span>Recruiter Screening Mode</span>
             </button>
         </div>
     </form>
@@ -85,24 +122,47 @@
 <!-- Feature Value Props Grid -->
 <div class="features-grid">
     <div class="feature-card">
-        <span class="feature-icon">🛡️</span>
+        <div class="feature-icon-box">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <polyline points="9 12 11 14 15 10"></polyline>
+            </svg>
+        </div>
         <h4>ATS Readiness Audit</h4>
         <p>Identify parseability risks, font/glyph issues, and missing standard section headings before you apply.</p>
     </div>
     <div class="feature-card">
-        <span class="feature-icon">🎯</span>
+        <div class="feature-icon-box">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+        </div>
         <h4>Actionable Impact Bullets</h4>
-        <p>Detect passive "worked on" phrasing and upgrade bullets using the Action + Tool + Measurable Result framework.</p>
+        <p>Detect passive phrasing and upgrade bullets using the Action + Tool + Measurable Result framework.</p>
     </div>
     <div class="feature-card">
-        <span class="feature-icon">🔍</span>
+        <div class="feature-icon-box">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+        </div>
         <h4>Skill &amp; Keyword Alignment</h4>
         <p>Map your demonstrated skills against the 53+ canonical skill ontology and target job requirements.</p>
     </div>
     <div class="feature-card">
-        <span class="feature-icon">⚖️</span>
+        <div class="feature-icon-box">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+        </div>
         <h4>Dynamic Health Scoring</h4>
-        <p>Transparent, explainable 7-factor scoring with dynamic renormalization when sections are omitted.</p>
+        <p>Transparent, explainable 7-factor scoring with dynamic renormalization when optional sections are omitted.</p>
     </div>
 </div>
 {% endblock %}

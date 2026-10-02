@@ -48,8 +48,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 3. Form Submit Loading State (Handles uploadForm and confirmForm)
-    const forms = [document.getElementById("uploadForm"), document.getElementById("confirmForm")];
+    // 3. Form Submit Loading State (Handles analyzeForm, uploadForm and confirmForm)
+    const forms = [
+        document.getElementById("analyzeForm"),
+        document.getElementById("uploadForm"),
+        document.getElementById("confirmForm")
+    ];
     forms.forEach((form) => {
         if (!form) return;
         form.addEventListener("submit", () => {
