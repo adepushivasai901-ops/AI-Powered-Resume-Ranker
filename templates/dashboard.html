@@ -1,0 +1,681 @@
+{% extends "base.html" %}
+
+{% block title %}Resume Analysis Dashboard — {{ analysis.candidate_name if analysis else 'My Resume' }}{% endblock %}
+
+{% block content %}
+{% if not analysis %}
+<div class="empty-state-card card text-center">
+    <div class="empty-icon">📊</div>
+    <h2>No Resume Analysis Available</h2>
+    <p class="section-desc">Upload your resume in PDF format to receive your personalized Resume Health Score, ATS Readiness Audit, and actionable career recommendations.</p>
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-large">Upload Resume Now</a>
+</div>
+{% else %}
+<!-- Candidate Top Profile Bar -->
+<div class="dashboard-header-bar">
+    <div class="candidate-meta">
+        <div class="candidate-avatar">
+            {{ analysis.candidate_name[:2].upper() if analysis.candidate_name else 'RE' }}
+        </div>
+        <div class="candidate-info">
+            <h1 class="candidate-title">{{ analysis.candidate_name }}</h1>
+            <div class="candidate-tags">
+                <span class="meta-tag">📄 {{ analysis.filename }}</span>
+                {% if analysis.email %}<span class="meta-tag">✉️ {{ analysis.email }}</span>{% endif %}
+                {% if analysis.phone %}<span class="meta-tag">📞 {{ analysis.phone }}</span>{% endif %}
+                <span class="meta-tag">💼 {{ analysis.total_experience_display }}</span>
+                <span class="meta-tag">🕒 Analyzed: {{ analysis.created_at or timestamp }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="header-actions">
+        {% if report_filename %}
+        <a href="{{ url_for('main.download_analysis', filename=report_filename) }}" class="btn btn-secondary">
+            📥 Download Resume Analysis (CSV)
+        </a>
+        {% endif %}
+        <a href="{{ url_for('main.index') }}" class="btn btn-outline">
+            Upload Another Resume
+        </a>
+    </div>
+</div>
+
+<!-- Main Top Grid: Health Score, ATS Gauge, Job Match, & Keep Improving -->
+<div class="metrics-grid">
+    <!-- Card 1: Resume Health Score -->
+    <div class="metric-card score-card health-card">
+        <div class="card-top-label">
+            <span>RESUME HEALTH SCORE</span>
+            <span class="help-tooltip" title="Composite 7-factor score with dynamic weight renormalization for missing sections.">ℹ️</span>
+        </div>
+        <div class="score-display">
+            <div class="score-circle {% if analysis.health_score.overall_score >= 80 %}score-high{% elif analysis.health_score.overall_score >= 65 %}score-mid{% else %}score-low{% endif %}">
+                <span class="score-number">{{ analysis.health_score.overall_score|round|int }}</span>
+                <span class="score-max">/100</span>
+            </div>
+            <div class="score-context">
+                <span class="rating-badge {% if analysis.health_score.overall_score >= 80 %}badge-success{% elif analysis.health_score.overall_score >= 65 %}badge-warning{% else %}badge-danger{% endif %}">
+                    {{ analysis.health_score.label.split('—')[0].strip() }}
+                </span>
+                <p class="score-summary-text">{{ analysis.health_score.label }}</p>
+            </div>
+        </div>
+        <div class="sub-components-list">
+            {% for key, comp in analysis.health_score.components.items() %}
+            <div class="sub-component-row">
+                <span class="comp-name">{{ comp.name }}</span>
+                {% if comp.is_active and comp.score is not none %}
+                <div class="comp-bar-wrapper">
+                    <div class="comp-bar-fill {% if comp.score >= 80 %}fill-high{% elif comp.score >= 65 %}fill-mid{% else %}fill-low{% endif %}" style="width: {{ comp.score }}%;"></div>
+                </div>
+                <span class="comp-val">{{ comp.score|round|int }}%</span>
+                {% else %}
+                <span class="comp-status-badge badge-neutral">Not Detected</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Card 2: ATS Readiness Analysis -->
+    <div class="metric-card ats-card">
+        <div class="card-top-label">
+            <span>ATS READINESS</span>
+            <span class="badge {% if analysis.ats_readiness.score >= 80 %}badge-success{% elif analysis.ats_readiness.score >= 65 %}badge-warning{% else %}badge-danger{% endif %}">
+                {{ analysis.ats_readiness.status_label }}
+            </span>
+        </div>
+        <div class="score-display ats-score-row">
+            <div class="mini-score-val {% if analysis.ats_readiness.score >= 80 %}text-success{% elif analysis.ats_readiness.score >= 65 %}text-warning{% else %}text-danger{% endif %}">
+                {{ analysis.ats_readiness.score|round|int }}%
+            </div>
+            <div class="ats-counts">
+                <span class="stat-pill pill-pass">✓ {{ analysis.ats_readiness.passed_count }} Passed</span>
+                <span class="stat-pill pill-warn">⚠ {{ analysis.ats_readiness.warning_count }} Warnings</span>
+                {% if analysis.ats_readiness.failed_count > 0 %}
+                <span class="stat-pill pill-fail">✕ {{ analysis.ats_readiness.failed_count }} Issues</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="ats-preview-list">
+            {% for check in analysis.ats_readiness.checks[:4] %}
+            <div class="ats-preview-item">
+                <span class="check-icon {% if check.status.value == 'PASSED' %}icon-pass{% elif check.status.value == 'WARNING' %}icon-warn{% else %}icon-fail{% endif %}">
+                    {% if check.status.value == 'PASSED' %}✓{% elif check.status.value == 'WARNING' %}⚠{% else %}✕{% endif %}
+                </span>
+                <span class="check-title">{{ check.title }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        <button class="btn btn-text switch-tab-btn" data-target="ats-tab">View All ATS Checks →</button>
+    </div>
+
+    <!-- Card 3: Optional Job Match or Tailoring Callout -->
+    <div class="metric-card jobmatch-card">
+        <div class="card-top-label">
+            <span>JOB DESCRIPTION MATCH</span>
+            {% if analysis.job_match and analysis.job_match.is_available %}
+            <span class="badge badge-primary">Active JD</span>
+            {% else %}
+            <span class="badge badge-neutral">Optional</span>
+            {% endif %}
+        </div>
+        {% if analysis.job_match and analysis.job_match.is_available %}
+        <div class="score-display">
+            <div class="mini-score-val text-primary">
+                {{ analysis.job_match.match_score|round|int }}%
+            </div>
+            <div class="job-meta-box">
+                <strong class="job-target-role">{{ analysis.job_match.target_role or 'Target Role' }}</strong>
+                <span class="job-match-sub">Keyword Coverage: {{ analysis.job_match.keyword_coverage_pct|round|int }}%</span>
+            </div>
+        </div>
+        <div class="match-quick-stats">
+            <div class="match-stat-item">
+                <span class="stat-label">Required Skills</span>
+                <span class="stat-val text-success">{{ analysis.job_match.required_skills_matched|length }} / {{ (analysis.job_match.required_skills_matched|length + analysis.job_match.required_skills_missing|length) }}</span>
+            </div>
+            <div class="match-stat-item">
+                <span class="stat-label">Preferred Skills</span>
+                <span class="stat-val text-info">{{ analysis.job_match.preferred_skills_matched|length }} / {{ (analysis.job_match.preferred_skills_matched|length + analysis.job_match.preferred_skills_missing|length) }}</span>
+            </div>
+        </div>
+        {% if analysis.job_match.required_skills_missing %}
+        <div class="missing-chip-preview">
+            <small>Missing:</small>
+            {% for s in analysis.job_match.required_skills_missing[:3] %}
+            <span class="chip chip-danger">{{ s }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <button class="btn btn-text switch-tab-btn" data-target="jobmatch-tab">View Job Match Breakdown →</button>
+        {% else %}
+        <div class="no-jd-card-content">
+            <div class="no-jd-icon">🎯</div>
+            <p class="no-jd-text">You evaluated your resume as a standalone document. Paste a job description to unlock targeted skill gap analysis and keyword matching.</p>
+            <button class="btn btn-sm btn-outline switch-tab-btn" data-target="jobmatch-tab">+ Optimize for a Job</button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Card 4: Keep Improving Summary -->
+    <div class="metric-card improvement-card">
+        <div class="card-top-label">
+            <span>ACTION PLAN</span>
+            <span class="badge badge-warning">{{ analysis.recommendations|length }} Actions</span>
+        </div>
+        {% set high_recs = analysis.recommendations | selectattr("priority.value", "equalto", "HIGH") | list %}
+        <div class="improvement-status">
+            <h3 class="improve-headline">Keep Improving</h3>
+            <p class="improve-sub">
+                <strong>{{ high_recs|length }} high-priority</strong> and {{ (analysis.recommendations|length - high_recs|length) }} additional improvement opportunities detected.
+            </p>
+        </div>
+        <div class="priority-recs-mini">
+            {% for rec in high_recs[:2] %}
+            <div class="rec-mini-item">
+                <span class="rec-mini-dot"></span>
+                <span class="rec-mini-text">{{ rec.issue }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        <button class="btn btn-primary btn-sm switch-tab-btn" data-target="recommendations-tab">View Actionable Recommendations</button>
+    </div>
+</div>
+
+<!-- Tab Navigation Bar -->
+<div class="dashboard-tabs">
+    <button class="tab-btn active" data-tab="overview-tab">📋 Overview</button>
+    <button class="tab-btn" data-tab="ats-tab">🛡️ ATS Readiness ({{ analysis.ats_readiness.score|round|int }}%)</button>
+    <button class="tab-btn" data-tab="skills-tab">💡 Skills &amp; Keywords ({{ analysis.skills_analysis.total_detected }})</button>
+    <button class="tab-btn" data-tab="experience-tab">💼 Experience &amp; Bullets</button>
+    <button class="tab-btn" data-tab="sections-tab">📑 Resume Sections</button>
+    <button class="tab-btn" data-tab="jobmatch-tab">🎯 Job Match {% if analysis.job_match.is_available %}({{ analysis.job_match.match_score|round|int }}%){% endif %}</button>
+    <button class="tab-btn" data-tab="recommendations-tab">🚀 Recommendations ({{ analysis.recommendations|length }})</button>
+    <button class="tab-btn" data-tab="preview-tab">📄 Resume Preview</button>
+</div>
+
+<!-- TAB 1: OVERVIEW -->
+<div id="overview-tab" class="tab-pane active">
+    <div class="dashboard-grid-two">
+        <!-- Left: Summary & Key Findings -->
+        <div class="dashboard-column">
+            <div class="card content-card">
+                <div class="card-header">
+                    <h3>Executive Resume Assessment</h3>
+                </div>
+                <p class="overview-lead">{{ analysis.health_score.explanation }}</p>
+                
+                <h4 class="mt-4">Detected Profile Highlights</h4>
+                <ul class="highlight-bullet-list">
+                    <li><strong>Total Career Experience:</strong> {{ analysis.total_experience_display }} across {{ analysis.experience_analysis.total_roles }} role(s).</li>
+                    <li><strong>Verified Skills:</strong> {{ analysis.skills_analysis.total_detected }} recognized technical/functional skills, with {{ analysis.skills_analysis.evidenced_skills|length }} verified in experience context.</li>
+                    <li><strong>Quantifiable Impact:</strong> {{ analysis.experience_analysis.measurable_achievement_count }} measurable achievement metrics identified.</li>
+                    <li><strong>ATS Compatibility:</strong> {{ analysis.ats_readiness.passed_count }} of {{ analysis.ats_readiness.checks|length }} audit checks passed.</li>
+                </ul>
+
+                {% if analysis.warnings %}
+                <div class="warnings-box mt-4">
+                    <h4>⚠️ Evidence-Based Observations</h4>
+                    <ul class="warnings-list">
+                        {% for warn in analysis.warnings %}
+                        <li>{{ warn }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right: Section Health At A Glance -->
+        <div class="dashboard-column">
+            <div class="card content-card">
+                <div class="card-header">
+                    <h3>Section Quality Breakdown</h3>
+                </div>
+                <div class="section-cards-grid">
+                    {% for key, sec in analysis.sections.items() %}
+                    <div class="section-mini-card">
+                        <div class="sec-card-header">
+                            <span class="sec-title">{{ sec.display_name }}</span>
+                            {% if sec.detected and sec.score is not none %}
+                            <span class="badge {% if sec.score >= 80 %}badge-success{% elif sec.score >= 65 %}badge-warning{% else %}badge-danger{% endif %}">
+                                {{ sec.score|round|int }}%
+                            </span>
+                            {% else %}
+                            <span class="badge badge-neutral">Not Detected</span>
+                            {% endif %}
+                        </div>
+                        {% if sec.strengths %}
+                        <p class="sec-quick-note text-success">✓ {{ sec.strengths[0] }}</p>
+                        {% elif sec.weaknesses %}
+                        <p class="sec-quick-note text-warning">⚠ {{ sec.weaknesses[0] }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB 2: ATS READINESS -->
+<div id="ats-tab" class="tab-pane">
+    <div class="card content-card">
+        <div class="card-header d-flex justify-between align-center">
+            <div>
+                <h3>ATS Readiness Analysis</h3>
+                <p class="section-desc">Evaluates your resume structure against industry-standard Applicant Tracking System parsing behaviors. <em>(Note: Commercial ATS engines vary; this assessment ensures maximum compatibility across platforms.)</em></p>
+            </div>
+            <div class="ats-badge-large">
+                <span class="ats-big-score">{{ analysis.ats_readiness.score|round|int }}%</span>
+                <span class="badge {% if analysis.ats_readiness.score >= 80 %}badge-success{% else %}badge-warning{% endif %}">{{ analysis.ats_readiness.status_label }}</span>
+            </div>
+        </div>
+
+        <div class="ats-checks-list mt-4">
+            {% for check in analysis.ats_readiness.checks %}
+            <div class="ats-check-card check-{{ check.status.value.lower() }}">
+                <div class="check-status-badge">
+                    {% if check.status.value == 'PASSED' %}
+                    <span class="badge badge-success">✓ PASSED</span>
+                    {% elif check.status.value == 'WARNING' %}
+                    <span class="badge badge-warning">⚠ WARNING</span>
+                    {% else %}
+                    <span class="badge badge-danger">✕ ACTION REQUIRED</span>
+                    {% endif %}
+                </div>
+                <div class="check-body">
+                    <h4 class="check-name">{{ check.title }}</h4>
+                    <p class="check-observation">{{ check.message }}</p>
+                    <div class="check-fix-tip">
+                        <strong>💡 How to optimize:</strong> {{ check.fix_tip }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- TAB 3: SKILLS & KEYWORDS -->
+<div id="skills-tab" class="tab-pane">
+    <div class="card content-card">
+        <div class="card-header">
+            <h3>Skills &amp; Competency Intelligence</h3>
+            <p class="section-desc">
+                Extracted skills classified into canonical domains using our verified 53+ skill ontology.
+                <strong>Evidenced Skills</strong> are substantiated within experience or projects; <strong>Claimed Skills</strong> appear only in a standalone skills list.
+            </p>
+        </div>
+
+        <div class="skills-summary-banner">
+            <div class="skill-stat">
+                <span class="stat-number text-primary">{{ analysis.skills_analysis.total_detected }}</span>
+                <span class="stat-title">Total Skills Detected</span>
+            </div>
+            <div class="skill-stat">
+                <span class="stat-number text-success">{{ analysis.skills_analysis.evidenced_skills|length }}</span>
+                <span class="stat-title">Resume-Evidenced</span>
+            </div>
+            <div class="skill-stat">
+                <span class="stat-number text-warning">{{ analysis.skills_analysis.claimed_skills|length }}</span>
+                <span class="stat-title">Claimed (Skills Box Only)</span>
+            </div>
+            <div class="skill-stat">
+                <span class="stat-number text-info">{{ (analysis.skills_analysis.evidenced_ratio * 100)|round|int }}%</span>
+                <span class="stat-title">Evidence Certainty Ratio</span>
+            </div>
+        </div>
+
+        <div class="skills-category-grid mt-4">
+            {% for cat in analysis.skills_analysis.categories %}
+            <div class="category-skill-card">
+                <h4 class="cat-title">{{ cat.category_name }}</h4>
+                <div class="chips-container">
+                    {% for skill in cat.skills %}
+                    {% set is_evidenced = skill in analysis.skills_analysis.evidenced_skills %}
+                    <span class="chip {% if is_evidenced %}chip-evidenced{% else %}chip-claimed{% endif %}" title="{% if is_evidenced %}Demonstrated in work experience or projects{% else %}Listed in skills section only{% endif %}">
+                        {{ skill }} {% if is_evidenced %}✓{% endif %}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if analysis.skills_analysis.recommendations %}
+        <div class="skill-recommendations mt-4">
+            <h4>Skill Section Recommendations</h4>
+            <ul>
+                {% for r in analysis.skills_analysis.recommendations %}
+                <li>{{ r }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- TAB 4: EXPERIENCE & BULLETS -->
+<div id="experience-tab" class="tab-pane">
+    <div class="card content-card">
+        <div class="card-header d-flex justify-between align-center">
+            <div>
+                <h3>Experience &amp; Bullet Quality Analysis</h3>
+                <p class="section-desc">
+                    Evaluates bullet points using the <strong>Action Verb + Technology + Task + Measurable Result</strong> framework.
+                </p>
+            </div>
+            <div class="bullet-score-badge">
+                <span class="badge {% if analysis.experience_analysis.score >= 80 %}badge-success{% else %}badge-warning{% endif %}">
+                    Score: {{ analysis.experience_analysis.score|round|int }}%
+                </span>
+            </div>
+        </div>
+
+        <div class="bullet-metrics-row">
+            <div class="bullet-metric-box">
+                <span class="num text-primary">{{ analysis.experience_analysis.total_bullets }}</span>
+                <span class="desc">Total Bullets</span>
+            </div>
+            <div class="bullet-metric-box">
+                <span class="num text-success">{{ analysis.experience_analysis.measurable_achievement_count }}</span>
+                <span class="desc">With Quantifiable Metrics</span>
+            </div>
+            <div class="bullet-metric-box">
+                <span class="num text-danger">{{ analysis.experience_analysis.weak_bullet_count }}</span>
+                <span class="desc">Passive Opener ("Worked on")</span>
+            </div>
+        </div>
+
+        <div class="bullets-detail-list mt-4">
+            <h4>Bullet-by-Bullet Impact Audit</h4>
+            {% for bullet in analysis.experience_analysis.bullets %}
+            <div class="bullet-audit-item {% if bullet.is_weak %}item-weak{% elif bullet.has_metrics %}item-strong{% else %}item-moderate{% endif %}">
+                <div class="bullet-top-row">
+                    <span class="bullet-tag {% if bullet.is_weak %}tag-weak{% elif bullet.has_metrics %}tag-strong{% else %}tag-moderate{% endif %}">
+                        {% if bullet.is_weak %}Needs Stronger Action Verb{% elif bullet.has_metrics %}High Impact Metric ✓{% else %}Action Oriented{% endif %}
+                    </span>
+                    <span class="bullet-score-pill">{{ bullet.score|round|int }}%</span>
+                </div>
+                <p class="bullet-raw-text">"{{ bullet.raw_text }}"</p>
+                {% if bullet.suggestion %}
+                <div class="bullet-advice">
+                    <span class="advice-label">💡 Coaching Advice:</span> {{ bullet.suggestion }}
+                </div>
+                {% endif %}
+                {% if bullet.example %}
+                <div class="bullet-example-box">
+                    <span class="example-label">✨ Example Rewrite (labeled for illustration):</span>
+                    <p class="example-text">{{ bullet.example }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- TAB 5: RESUME SECTIONS -->
+<div id="sections-tab" class="tab-pane">
+    <div class="card content-card">
+        <div class="card-header">
+            <h3>Comprehensive Section Quality Analysis</h3>
+            <p class="section-desc">Independent evaluation of each major resume section with strengths, weaknesses, and direct improvement advice.</p>
+        </div>
+
+        <div class="sections-full-list mt-4">
+            {% for key, sec in analysis.sections.items() %}
+            <div class="section-detail-card card">
+                <div class="sec-detail-header d-flex justify-between align-center">
+                    <h4>{{ sec.display_name }}</h4>
+                    {% if sec.detected and sec.score is not none %}
+                    <span class="badge {% if sec.score >= 80 %}badge-success{% elif sec.score >= 65 %}badge-warning{% else %}badge-danger{% endif %}">
+                        {{ sec.status }} ({{ sec.score|round|int }}%)
+                    </span>
+                    {% else %}
+                    <span class="badge badge-neutral">Not Detected</span>
+                    {% endif %}
+                </div>
+
+                <div class="sec-feedback-grid mt-3">
+                    <div class="sec-col">
+                        <strong class="col-title text-success">✓ What is working well</strong>
+                        {% if sec.strengths %}
+                        <ul class="clean-list">
+                            {% for s in sec.strengths %}
+                            <li>{{ s }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="empty-note">No specific strengths isolated for this section.</p>
+                        {% endif %}
+                    </div>
+                    <div class="sec-col">
+                        <strong class="col-title text-warning">⚠ What could be improved</strong>
+                        {% if sec.weaknesses %}
+                        <ul class="clean-list">
+                            {% for w in sec.weaknesses %}
+                            <li>{{ w }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="empty-note">No major structural weaknesses identified.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if sec.recommendation %}
+                <div class="sec-recommendation-box mt-3">
+                    <strong>Suggested Action:</strong> {{ sec.recommendation }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- TAB 6: JOB MATCH (OPTIONAL) -->
+<div id="jobmatch-tab" class="tab-pane">
+    <div class="card content-card">
+        <div class="card-header">
+            <h3>Job Description Match &amp; Role Tailoring</h3>
+            <p class="section-desc">Analyze how well your qualifications align with a specific target job posting.</p>
+        </div>
+
+        {% if analysis.job_match and analysis.job_match.is_available %}
+        <div class="job-match-full-header">
+            <div class="jm-left">
+                <h2 class="jm-role-title">{{ analysis.job_match.target_role or 'Target Role' }}</h2>
+                <div class="jm-overall-score-pill">
+                    <span class="jm-big-num">{{ analysis.job_match.match_score|round|int }}%</span>
+                    <span>Role Alignment Match</span>
+                </div>
+            </div>
+            <div class="jm-right">
+                <div class="jm-check-row">
+                    <span>Experience Duration:</span>
+                    <strong>{% if analysis.job_match.experience_meets %}✓ {{ analysis.job_match.experience_note }}{% else %}⚠ {{ analysis.job_match.experience_note }}{% endif %}</strong>
+                </div>
+                <div class="jm-check-row">
+                    <span>Academic Alignment:</span>
+                    <strong>{% if analysis.job_match.education_meets %}✓ {{ analysis.job_match.education_note }}{% else %}⚠ {{ analysis.job_match.education_note }}{% endif %}</strong>
+                </div>
+                <div class="jm-check-row">
+                    <span>Keyword Match Ratio:</span>
+                    <strong>{{ analysis.job_match.keyword_coverage_pct|round|int }}%</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Required Skills Comparison -->
+        <div class="match-category-box mt-4">
+            <h4>Required Skills Analysis</h4>
+            <div class="match-skills-grid">
+                <div class="match-col">
+                    <h5 class="text-success">Matched Required Skills ({{ analysis.job_match.required_skills_matched|length }})</h5>
+                    <div class="chips-container">
+                        {% for s in analysis.job_match.required_skills_matched %}
+                        <span class="chip chip-success">✓ {{ s }}</span>
+                        {% endfor %}
+                        {% if not analysis.job_match.required_skills_matched %}
+                        <span class="empty-text">None matched</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="match-col">
+                    <h5 class="text-danger">Missing Required Skills ({{ analysis.job_match.required_skills_missing|length }})</h5>
+                    <div class="chips-container">
+                        {% for s in analysis.job_match.required_skills_missing %}
+                        <span class="chip chip-danger">✕ {{ s }}</span>
+                        {% endfor %}
+                        {% if not analysis.job_match.required_skills_missing %}
+                        <span class="text-success font-medium">All core requirements satisfied!</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preferred Skills Comparison -->
+        <div class="match-category-box mt-4">
+            <h4>Preferred &amp; Bonus Skills Analysis</h4>
+            <div class="match-skills-grid">
+                <div class="match-col">
+                    <h5 class="text-info">Matched Preferred ({{ analysis.job_match.preferred_skills_matched|length }})</h5>
+                    <div class="chips-container">
+                        {% for s in analysis.job_match.preferred_skills_matched %}
+                        <span class="chip chip-info">✓ {{ s }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="match-col">
+                    <h5 class="text-muted">Missing Preferred ({{ analysis.job_match.preferred_skills_missing|length }})</h5>
+                    <div class="chips-container">
+                        {% for s in analysis.job_match.preferred_skills_missing %}
+                        <span class="chip chip-neutral">{{ s }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Keyword Context & Recommendations -->
+        <div class="keywords-table-box mt-4">
+            <h4>Requirement Keyword Audit</h4>
+            <p class="table-subnote">Always add keywords only when you possess authentic, demonstrable competence.</p>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Keyword / Skill</th>
+                        <th>Importance</th>
+                        <th>Detected In Resume</th>
+                        <th>Context &amp; Guidance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for kw in analysis.job_match.keywords %}
+                    <tr>
+                        <td><strong>{{ kw.keyword }}</strong></td>
+                        <td><span class="badge {% if kw.importance == 'Required' %}badge-danger{% else %}badge-neutral{% endif %}">{{ kw.importance }}</span></td>
+                        <td>
+                            {% if kw.detected %}
+                            <span class="badge badge-success">✓ Yes {% if kw.evidence_section %}({{ kw.evidence_section }}){% endif %}</span>
+                            {% else %}
+                            <span class="badge badge-danger">✕ No</span>
+                            {% endif %}
+                        </td>
+                        <td><small>{{ kw.context_tip }}</small></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <!-- No JD Available Form -->
+        <div class="no-jd-form-wrapper">
+            <div class="no-jd-callout">
+                <h4>Paste a Job Description to Unlock Match Scores</h4>
+                <p>Compare your resume against any job posting to see missing skills, keyword gaps, and tailored suggestions.</p>
+            </div>
+            <form action="{{ url_for('main.analyze') }}" method="POST" enctype="multipart/form-data" class="mt-4">
+                <div class="form-group">
+                    <label for="new_jd_text" class="section-label">Target Job Description:</label>
+                    <textarea id="new_jd_text" name="job_description" rows="7" class="form-control" placeholder="Paste job posting text here..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="section-label">Re-upload Resume (PDF):</label>
+                    <input type="file" name="resume" accept=".pdf" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Compare Resume Against Job Posting</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- TAB 7: RECOMMENDATIONS -->
+<div id="recommendations-tab" class="tab-pane">
+    <div class="card content-card">
+        <div class="card-header d-flex justify-between align-center">
+            <div>
+                <h3>Personalized Resume Improvement Plan</h3>
+                <p class="section-desc">Prioritized action items to make your resume more impactful to human recruiters and robust across ATS screeners.</p>
+            </div>
+            <div class="priority-filter-buttons">
+                <button class="filter-pill active" data-filter="all">All ({{ analysis.recommendations|length }})</button>
+                <button class="filter-pill" data-filter="HIGH">High Priority</button>
+                <button class="filter-pill" data-filter="MEDIUM">Medium Priority</button>
+                <button class="filter-pill" data-filter="LOW">Low Priority</button>
+            </div>
+        </div>
+
+        <div class="recommendations-list mt-4">
+            {% for rec in analysis.recommendations %}
+            <div class="recommendation-card priority-{{ rec.priority.value.lower() }}" data-priority="{{ rec.priority.value }}">
+                <div class="rec-header">
+                    <div class="rec-tags">
+                        <span class="badge {% if rec.priority.value == 'HIGH' %}badge-danger{% elif rec.priority.value == 'MEDIUM' %}badge-warning{% else %}badge-neutral{% endif %}">
+                            {{ rec.priority.value }} PRIORITY
+                        </span>
+                        <span class="rec-category-tag">{{ rec.category }}</span>
+                    </div>
+                    <span class="rec-id">{{ rec.id }}</span>
+                </div>
+                <h4 class="rec-issue">{{ rec.issue }}</h4>
+                <div class="rec-detail-block">
+                    <div class="rec-why">
+                        <strong>Why it matters:</strong> {{ rec.why_it_matters }}
+                    </div>
+                    <div class="rec-action">
+                        <strong>Suggested Action:</strong> {{ rec.suggested_action }}
+                    </div>
+                    {% if rec.example %}
+                    <div class="rec-example">
+                        <strong>Example Guidance:</strong>
+                        <pre class="example-pre">{{ rec.example }}</pre>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- TAB 8: RESUME PREVIEW -->
+<div id="preview-tab" class="tab-pane">
+    <div class="card content-card">
+        <div class="card-header">
+            <h3>Extracted Text &amp; Structural Preview</h3>
+            <p class="section-desc">Review the exact plain text extracted from your PDF resume. Verify that formatting, job titles, and bullet points remain cleanly separated.</p>
+        </div>
+        <div class="preview-text-box">
+            <pre class="extracted-resume-pre">{{ analysis.raw_text }}</pre>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -189,4 +189,121 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+
+    // 6. Candidate Single Resume Drag & Drop Zone
+    const resumeInput = document.getElementById("resumeInput");
+    const fileDropArea = document.getElementById("fileDropArea");
+    const selectedFileName = document.getElementById("selectedFileName");
+    const selectedFileSize = document.getElementById("selectedFileSize");
+    const removeFileBtn = document.getElementById("removeFileBtn");
+
+    if (resumeInput && fileDropArea) {
+        const updateSingleFileDisplay = (file) => {
+            if (file && file.name.toLowerCase().endsWith(".pdf")) {
+                if (selectedFileName) selectedFileName.textContent = file.name;
+                if (selectedFileSize) selectedFileSize.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+                if (fileSelectionInfo) fileSelectionInfo.style.display = "block";
+                fileDropArea.classList.add("has-file");
+            }
+        };
+
+        resumeInput.addEventListener("change", (e) => {
+            const files = e.target.files;
+            if (files && files[0]) {
+                updateSingleFileDisplay(files[0]);
+            }
+        });
+
+        // Drag & drop visual events
+        ["dragenter", "dragover"].forEach((eventName) => {
+            fileDropArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileDropArea.classList.add("dragover");
+            });
+        });
+
+        ["dragleave", "drop"].forEach((eventName) => {
+            fileDropArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileDropArea.classList.remove("dragover");
+            });
+        });
+
+        fileDropArea.addEventListener("drop", (e) => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files[0]) {
+                resumeInput.files = dt.files;
+                updateSingleFileDisplay(dt.files[0]);
+            }
+        });
+
+        if (removeFileBtn) {
+            removeFileBtn.addEventListener("click", () => {
+                resumeInput.value = "";
+                if (fileSelectionInfo) fileSelectionInfo.style.display = "none";
+                fileDropArea.classList.remove("has-file");
+            });
+        }
+    }
+
+    // 7. Candidate Dashboard Tab Switching
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabPanes = document.querySelectorAll(".tab-pane");
+
+    function activateTab(tabId) {
+        tabButtons.forEach((b) => b.classList.remove("active"));
+        tabPanes.forEach((p) => p.classList.remove("active"));
+
+        const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        const targetPane = document.getElementById(tabId);
+
+        if (targetBtn && targetPane) {
+            targetBtn.classList.add("active");
+            targetPane.classList.add("active");
+        }
+    }
+
+    tabButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const target = btn.getAttribute("data-tab");
+            if (target) activateTab(target);
+        });
+    });
+
+    // Secondary switch-tab buttons in cards
+    document.querySelectorAll(".switch-tab-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            const target = btn.getAttribute("data-target");
+            if (target) {
+                activateTab(target);
+                const tabNav = document.querySelector(".dashboard-tabs");
+                if (tabNav) tabNav.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
+    });
+
+    // 8. Recommendation Priority Filtering
+    const filterPills = document.querySelectorAll(".filter-pill");
+    const recCards = document.querySelectorAll(".recommendation-card");
+
+    filterPills.forEach((pill) => {
+        pill.addEventListener("click", () => {
+            filterPills.forEach((p) => p.classList.remove("active"));
+            pill.classList.add("active");
+
+            const filter = pill.getAttribute("data-filter");
+            recCards.forEach((card) => {
+                if (filter === "all") {
+                    card.style.display = "block";
+                } else {
+                    const cardPriority = card.getAttribute("data-priority");
+                    card.style.display = cardPriority === filter ? "block" : "none";
+                }
+            });
+        });
+    });
 });
+

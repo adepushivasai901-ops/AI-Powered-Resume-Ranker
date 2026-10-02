@@ -3,29 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}AI-Powered Resume Ranker{% endblock %}</title>
+    <title>{% block title %}AI-Powered Resume Analyzer — Candidate Resume & Career Optimization{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
     <header class="app-header">
         <div class="container header-container">
             <div class="brand">
-                <h1><a href="{{ url_for('main.index') }}">AI-Powered Resume Ranker</a></h1>
-                <p class="subtitle">Intelligent Recruitment & Candidate Scoring Decision Support</p>
+                <a href="{{ url_for('main.index') }}" class="brand-logo">
+                    <span class="brand-icon">⚡</span>
+                    <div class="brand-text">
+                        <span class="brand-name">AI-Powered Resume Analyzer</span>
+                        <span class="brand-sub">Career Optimization &amp; ATS Resume Intelligence</span>
+                        <span class="sr-only">AI-Powered Resume Ranker</span>
+                    </div>
+                </a>
             </div>
             <nav class="nav-links">
-                <a href="{{ url_for('main.index') }}" class="nav-link">Screening</a>
-                <a href="{{ url_for('main.results') }}" class="nav-link">Results</a>
+                <a href="{{ url_for('main.index') }}" class="nav-link {% if request.endpoint == 'main.index' %}active{% endif %}">Analyze Resume</a>
+                <a href="{{ url_for('main.dashboard') }}" class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}">My Dashboard</a>
+                <a href="{{ url_for('main.results') }}" class="nav-link nav-secondary {% if request.endpoint == 'main.results' %}active{% endif %}">Screening</a>
             </nav>
         </div>
     </header>
 
-    <main class="container">
+    <main class="container main-content">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="flash-messages">
                     {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                        <div class="alert alert-{{ category }}">
+                            <span class="alert-icon">{% if category == 'success' %}✓{% elif category == 'danger' %}✕{% else %}ℹ{% endif %}</span>
+                            <span class="alert-text">{{ message }}</span>
+                        </div>
                     {% endfor %}
                 </div>
             {% endif %}
@@ -35,9 +48,15 @@
     </main>
 
     <footer class="app-footer">
-        <div class="container">
-            <p>&copy; AI-Powered Resume Ranker. Decision-support tool for HR professionals.</p>
-            <p class="footer-note">Statistical NLP & TF-IDF decision-support engine. Final hiring decisions remain with human recruiters.</p>
+        <div class="container footer-content">
+            <div class="footer-left">
+                <p><strong>AI-Powered Resume Analyzer</strong> — Your intelligent personal resume &amp; career coach.</p>
+                <p class="footer-note">Evidence-grounded NLP, ATS readiness analysis &amp; transparent career optimization. Resumes remain self-reported.</p>
+            </div>
+            <div class="footer-right">
+                <a href="{{ url_for('main.index') }}">New Analysis</a>
+                <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+            </div>
         </div>
     </footer>
 
